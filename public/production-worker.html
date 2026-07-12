@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Worker - QMS System</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        .workflow-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 2.5rem;
+            max-width: 600px;
+            margin: 2.5rem auto;
+            border-top: 5px solid var(--primary-color);
+        }
+
+        /* Stepper progress */
+        .stepper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            position: relative;
+        }
+
+        .stepper-line {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 2px;
+            background: var(--border-color);
+            z-index: 1;
+            transition: background 0.3s;
+        }
+
+        .stepper-line-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 100%;
+            background: var(--primary-color);
+            transition: width 0.3s;
+        }
+
+        .step {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: var(--text-light);
+            margin: 0 auto 8px;
+            transition: all 0.3s;
+        }
+
+        .step-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .step.active .step-circle {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 0 0 4px rgba(27, 77, 62, 0.15);
+        }
+
+        .step.active .step-label {
+            color: var(--primary-color);
+        }
+
+        .step.completed .step-circle {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Option cards (Step 2) */
+        .option-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin: 2rem 0;
+        }
+
+        .option-card {
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .option-card:hover {
+            border-color: var(--primary-color);
+            background-color: var(--light-bg);
+        }
+
+        .option-card.selected {
+            border-color: var(--primary-color);
+            background-color: #e8f5e9;
+        }
+
+        .option-card input[type="radio"] {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            accent-color: var(--primary-color);
+            transform: scale(1.2);
+        }
+
+        .option-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .option-title {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .option-desc {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        /* Viewfinder barcode simulation (Step 3) */
+        .scanner-viewfinder {
+            position: relative;
+            width: 280px;
+            height: 180px;
+            border: 3px dashed var(--primary-color);
+            border-radius: 12px;
+            margin: 1.5rem auto;
+            overflow: hidden;
+            background: #fafbfc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.02);
+        }
+
+        .scanner-laser {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #ef4444;
+            box-shadow: 0 0 12px #ef4444;
+            animation: laserScan 2.5s ease-in-out infinite;
+        }
+
+        @keyframes laserScan {
+            0% {
+                top: 10%;
+            }
+
+            50% {
+                top: 90%;
+            }
+
+            100% {
+                top: 10%;
+            }
+        }
+
+        .viewfinder-corner {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            border: 3px solid var(--primary-color);
+        }
+
+        .tl {
+            top: 8px;
+            left: 8px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .tr {
+            top: 8px;
+            right: 8px;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .bl {
+            bottom: 8px;
+            left: 8px;
+            border-right: none;
+            border-top: none;
+        }
+
+        .br {
+            bottom: 8px;
+            right: 8px;
+            border-left: none;
+            border-top: none;
+        }
+
+        /* Item Info layout (Step 4) */
+        .info-panel {
+            background: var(--light-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: var(--text-light);
+            font-size: 13.5px;
+        }
+
+        .info-val {
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 13.5px;
+        }
+
+        /* Action buttons footer */
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn-flex {
+            flex: 1;
+        }
+
+        /* Inputs */
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary-color);
+        }
+
+        /* Success screen */
+        .success-state {
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            color: var(--success-color);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Pulse dot for active repair status */
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--warning-color);
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.9);
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+            }
+            70% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 8px rgba(245, 158, 11, 0);
+            }
+            100% {
+                transform: scale(0.9);
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="container">
+            <div class="nav-brand">
+                <img src="/logo.png" alt="VFR Logo">
+                <span>QMS System</span>
+            </div>
+            <ul class="nav-menu">
+                <li style="color: #6b7280;"><strong>Production Worker</strong> - <span id="username"></span></li>
+                <li><button class="logout-btn" onclick="logout()">Logout</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <div class="container">
+            <!-- Stepper Container Card -->
+            <div class="workflow-card">
+                <!-- Stepper Progress Bar -->
+                <div class="stepper" id="stepperContainer" style="display: none;">
+                    <div class="stepper-line">
+                        <div class="stepper-line-fill" id="stepperLineFill"></div>
+                    </div>
+                    <div class="step active" id="step1-indicator">
+                        <div class="step-circle">1</div>
+                        <div class="step-label">Menu</div>
+                    </div>
+                    <div class="step" id="step2-indicator">
+                        <div class="step-circle">2</div>
+                        <div class="step-label">Mode</div>
+                    </div>
+                    <div class="step" id="step3-indicator">
+                        <div class="step-circle">3</div>
+                        <div class="step-label">Input</div>
+                    </div>
+                    <div class="step" id="step4-indicator">
+                        <div class="step-circle">4</div>
+                        <div class="step-label">Action</div>
+                    </div>
+                </div>
+
+                <!-- Step Views -->
+                <div id="step-views">
+
+                    <!-- STEP 1: Main Menu -->
+                    <div id="view-step1" style="text-align: center;">
+                        <h2
+                            style="font-size: 1.6rem; color: var(--text-color); margin-bottom: 1rem; font-weight: bold;">
+                            Main Menu</h2>
+                        <p style="color: var(--text-light); margin-bottom: 2rem;">Scan or enter a quarantine item's report code (Master SKU) to
+                            assign workers and start the repair operation.</p>
+
+                        <div style="font-size: 5rem; margin-bottom: 2rem;">🛠️</div>
+
+                        <button class="btn btn-primary" onclick="goToStep(2)"
+                            style="width: 100%; padding: 1rem; font-size: 1.1rem; border-radius: 8px;">
+                            Scan / Enter Quarantine Code
+                        </button>
+                    </div>
+
+                    <!-- STEP 2: Select Mode -->
+                    <div id="view-step2" style="display: none;">
+                        <h2
+                            style="font-size: 1.4rem; color: var(--text-color); margin-bottom: 0.5rem; font-weight: bold;">
+                            Select Mode</h2>
+                        <p style="color: var(--text-light); font-size: 0.9rem;">Choose how you want to load the repair
+                            item's information.</p>
+
+                        <div class="option-grid">
+                            <div class="option-card selected" onclick="selectMode('manual')" id="mode-manual-card">
+                                <input type="radio" name="input_mode" value="manual" checked>
+                                <span class="option-icon">⌨️</span>
+                                <div class="option-title">Manual Enter</div>
+                                <div class="option-desc">Type in the quarantine report code</div>
+                            </div>
+                            <div class="option-card" onclick="selectMode('scan')" id="mode-scan-card">
+                                <input type="radio" name="input_mode" value="scan">
+                                <span class="option-icon">📷</span>
+                                <div class="option-title">Scan Quarantine Code</div>
+                                <div class="option-desc">Use device camera scanner</div>
+                            </div>
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-secondary btn-flex" onclick="goToStep(1)">Back</button>
+                            <button class="btn btn-primary btn-flex" onclick="goToStep(3)">Next</button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Input / Scan Partcode -->
+                    <div id="view-step3" style="display: none;">
+                        <h2 style="font-size: 1.4rem; color: var(--text-color); margin-bottom: 0.5rem; font-weight: bold;"
+                            id="step3-title">Input Quarantine Code</h2>
+                        <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;" id="step3-desc">
+                        </p>
+
+                        <!-- Manual Input Form -->
+                        <div id="step3-manual-ui">
+                            <div style="margin-bottom: 1rem;">
+                                <label
+                                    style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 6px; color: var(--text-light); text-transform: uppercase;">Quarantine Report Code</label>
+                                <input type="text" id="partcode-input" class="form-input" placeholder="e.g. MSKU-10001"
+                                    value="MSKU-10001">
+                            </div>
+                            <div id="barcode-error" style="color: var(--danger-color); font-size: 13.5px; font-weight: 500; margin-top: -0.5rem; margin-bottom: 1rem; display: none;"></div>
+                            <button class="btn btn-primary" onclick="submitBarcode()"
+                                style="width: 100%; padding: 0.75rem;">Submit</button>
+                        </div>
+
+                        <!-- Barcode Scanner Simulation -->
+                        <div id="step3-scan-ui" style="display: none; text-align: center;">
+                            <div class="scanner-viewfinder">
+                                <div class="scanner-laser"></div>
+                                <div class="viewfinder-corner tl"></div>
+                                <div class="viewfinder-corner tr"></div>
+                                <div class="viewfinder-corner bl"></div>
+                                <div class="viewfinder-corner br"></div>
+                                <div style="font-size: 2.0rem; opacity: 0.15;">Quarantine Code</div>
+                            </div>
+                            <button class="btn btn-primary" onclick="simulateScan()"
+                                style="width: 100%; padding: 0.75rem;">Simulate Scan</button>
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-secondary btn-flex" onclick="goToStep(2)">Back</button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 4: Feature Menu (Location, Repair Time, Supplement) -->
+                    <div id="view-step4" style="display: none;">
+                        <!-- Sub-view 4A: Main Menu -->
+                        <div id="view-step4-main" style="text-align: center;">
+                            <h2 style="font-size: 1.6rem; color: var(--text-color); margin-bottom: 0.5rem; font-weight: bold;">Main Menu</h2>
+                            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;" id="step4-item-info-summary"></p>
+                            
+                            <!-- Hammer and Wrench Icon -->
+                            <div style="font-size: 5rem; margin-bottom: 2rem;">🛠️</div>
+
+                            <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
+                                <button class="btn btn-primary" onclick="showStep4SubView('location')" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                    <span>📍</span> Location update
+                                </button>
+                                <button class="btn btn-primary" onclick="showStep4SubView('repair')" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                    <span>🕒</span> Repair time
+                                </button>
+                                <button class="btn btn-primary" onclick="showStep4SubView('supplement')" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                    <span>📦</span> Supplement status
+                                </button>
+                            </div>
+
+                            <button class="btn btn-secondary" onclick="goToStep(3)" style="width: 100%; padding: 0.75rem; border-radius: 8px; background-color: #f3f4f6; color: #4b5563; border: none; font-weight: 600;">
+                                ← Back to Scan
+                            </button>
+                        </div>
+
+                        <!-- Sub-view 4B: Location update -->
+                        <div id="view-step4-location" style="display: none; text-align: center;">
+                            <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
+                                <button class="btn-ghost" onclick="showStep4SubView('main')" style="border: none; background: none; font-size: 1.5rem; color: var(--primary-color); cursor: pointer;">←</button>
+                                <h2 style="font-size: 1.6rem; color: var(--text-color); font-weight: bold; flex: 1; margin-right: 2rem;">Location update</h2>
+                            </div>
+                            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;" id="step4-location-info-summary"></p>
+
+                            <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
+                                <button class="btn btn-primary" onclick="handleArriveAtRepair()" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                    <span>📍</span> Arrive at repair department
+                                </button>
+                                <button class="btn btn-primary" onclick="handleReturnToInspection()" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                    <span>↩️</span> Return to inspection
+                                </button>
+                            </div>
+
+                            <button class="btn btn-secondary" onclick="showStep4SubView('main')" style="width: 100%; padding: 0.75rem; border-radius: 8px; background-color: #e5e7eb; color: #374151; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <span>←</span> Back
+                            </button>
+                        </div>
+
+                        <!-- Sub-view 4C: Repair time -->
+                        <div id="view-step4-repair" style="display: none; text-align: center;">
+                            <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
+                                <button class="btn-ghost" onclick="showStep4SubView('main')" style="border: none; background: none; font-size: 1.5rem; color: var(--primary-color); cursor: pointer;">←</button>
+                                <h2 style="font-size: 1.6rem; color: var(--text-color); font-weight: bold; flex: 1; margin-right: 2rem;">Repair time</h2>
+                            </div>
+                            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;" id="step4-repair-info-summary"></p>
+
+                            <!-- Running Timer display if active -->
+                            <div id="repair-timer-display" style="display: none; background: #e8f5e9; border: 1px solid var(--primary-color); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                                <div style="font-size: 11px; text-transform: uppercase; color: var(--primary-color); font-weight: bold;">Repair Timer Running</div>
+                                <div id="repair-elapsed-time" style="font-size: 2rem; font-weight: bold; font-family: monospace; color: var(--primary-color); margin-top: 4px;">00:00:00</div>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
+                                <button class="btn btn-primary" id="btn-start-repair" onclick="handleStartRepair()" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                    <span>▶</span> Start repair
+                                </button>
+                                <button class="btn btn-primary" id="btn-end-repair" onclick="handleEndRepair()" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                    <span>■</span> End repair
+                                </button>
+                            </div>
+
+                            <button class="btn btn-secondary" onclick="showStep4SubView('main')" style="width: 100%; padding: 0.75rem; border-radius: 8px; background-color: #e5e7eb; color: #374151; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <span>←</span> Back
+                            </button>
+                        </div>
+
+                        <!-- Sub-view 4D: Supplement status -->
+                        <div id="view-step4-supplement" style="display: none; text-align: center;">
+                            <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
+                                <button class="btn-ghost" onclick="showStep4SubView('main')" style="border: none; background: none; font-size: 1.5rem; color: var(--primary-color); cursor: pointer;">←</button>
+                                <h2 style="font-size: 1.6rem; color: var(--text-color); font-weight: bold; flex: 1; margin-right: 2rem;">Supplement status</h2>
+                            </div>
+                            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;" id="step4-supplement-info-summary"></p>
+
+                            <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
+                                <button class="btn btn-primary" id="btn-receive-supplement" onclick="handleReceiveSupplement()" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                    <span>✔️</span> Received
+                                </button>
+                            </div>
+
+                            <button class="btn btn-secondary" onclick="showStep4SubView('main')" style="width: 100%; padding: 0.75rem; border-radius: 8px; background-color: #e5e7eb; color: #374151; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <span>←</span> Back
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SUCCESS STATE -->
+                    <div id="view-success" style="display: none;">
+                        <div class="success-state">
+                            <div class="success-icon">✔️</div>
+                            <h2
+                                style="font-size: 1.6rem; color: var(--text-color); margin-bottom: 0.5rem; font-weight: bold;">
+                                Repair Started!</h2>
+                            <p style="color: var(--text-light); margin-bottom: 2rem;">The repair process timer has been
+                                initialized. Assigned workers have been registered successfully.</p>
+                            <button class="btn btn-primary" onclick="resetWorkflow()"
+                                style="width: 100%; padding: 0.75rem;">Return to Main Menu</button>
+                        </div>
+                    </div>
+
+                    <!-- ACTIVE REPAIR PROCESS SCREEN -->
+                    <div id="view-active-repair" style="display: none;">
+                        <h2 style="font-size: 1.4rem; color: var(--text-color); margin-bottom: 0.5rem; font-weight: bold;">
+                            Active Repair Process
+                        </h2>
+                        <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                            This item is currently undergoing repair. Review details or complete the operation.
+                        </p>
+
+                        <div class="info-panel" style="border-left: 4px solid var(--warning-color);">
+                            <div class="info-row">
+                                <div class="info-label">Status</div>
+                                <div class="info-val" style="color: var(--warning-color); font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                                    <span class="pulse-dot"></span> In Progress
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">Item ID</div>
+                                <div class="info-val" id="active-id"></div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">Item Name</div>
+                                <div class="info-val" id="active-name"></div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">Defect Case</div>
+                                <div class="info-val" id="active-defect" style="color: var(--danger-color);"></div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">Assigned Workers</div>
+                                <div class="info-val" id="active-workers"></div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">Repair Location</div>
+                                <div class="info-val" id="active-location" style="color: var(--primary-color); font-weight: bold;"></div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">Start Time</div>
+                                <div class="info-val" id="active-start-time"></div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">Elapsed Time</div>
+                                <div class="info-val" id="active-elapsed" style="font-family: monospace; font-size: 1.1rem; color: var(--primary-color); font-weight: bold;">00:00:00</div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="confirmEndRepair()"
+                            style="width: 100%; padding: 1rem; font-size: 1.05rem; font-weight: bold; border-radius: 8px; margin-bottom: 1rem;">
+                            End Repair
+                        </button>
+
+                        <div class="btn-group">
+                            <button class="btn btn-secondary btn-flex" onclick="goToStep(3)">Back</button>
+                        </div>
+                    </div>
+
+                    <!-- COMPLETION SUCCESS STATE -->
+                    <div id="view-completion-success" style="display: none;">
+                        <div class="success-state">
+                            <div class="success-icon" style="color: var(--success-color);">🎉</div>
+                            <h2 style="font-size: 1.6rem; color: var(--text-color); margin-bottom: 0.5rem; font-weight: bold;">
+                                Repair Completed!
+                            </h2>
+                            <p style="color: var(--text-light); margin-bottom: 2rem;" id="completion-success-msg">
+                                The repair process has been marked as done. The total duration has been recorded.
+                            </p>
+                            <button class="btn btn-primary" onclick="resetWorkflow()"
+                                style="width: 100%; padding: 0.75rem;">Return to Main Menu</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/index.html';
+        }
+
+        document.getElementById('username').textContent = localStorage.getItem('username') || 'Production Worker';
+
+        const role = localStorage.getItem('role');
+        if (role === 'Production Manager') {
+            window.location.href = '/production-manager.html';
+        }
+        if (role === 'QC Manager') {
+            window.location.href = '/qc-manager.html';
+        }
+
+        // Workflow States
+        let currentStep = 1;
+        let selectedInputMode = 'manual';
+        let scannedBarcode = '';
+        let workerCount = 1;
+        let elapsedTimerInterval = null;
+        let activeLocation = '';
+        let locInputMode = 'scan';
+
+        const REPAIR_TICKET_STATUS_KEY = 'qms_repair_ticket_statuses';
+
+        function readRepairTicketStatuses() {
+            try {
+                return JSON.parse(localStorage.getItem(REPAIR_TICKET_STATUS_KEY) || '{}');
+            } catch (error) {
+                console.error('Failed to read repair ticket statuses:', error);
+                return {};
+            }
+        }
+
+        function writeRepairTicketStatuses(statuses) {
+            localStorage.setItem(REPAIR_TICKET_STATUS_KEY, JSON.stringify(statuses));
+        }
+
+        function updateRepairTicketStatus(ticketId, status, details = {}) {
+            if (!ticketId) return;
+
+            const statuses = readRepairTicketStatuses();
+            
+            // Find all tickets that match either the ticketId or scannedBarcode or itemCode
+            const matchingTickets = inspectionData.filter(item => 
+                item.id === ticketId || 
+                item.itemCode === ticketId || 
+                (scannedBarcode && (item.id === scannedBarcode || item.itemCode === scannedBarcode))
+            );
+
+            // If we found matching tickets from inspectionData, update all of them
+            if (matchingTickets.length > 0) {
+                matchingTickets.forEach(t => {
+                    statuses[t.id] = {
+                        ...(statuses[t.id] || {}),
+                        ...details,
+                        status,
+                        updatedAt: new Date().toISOString()
+                    };
+                });
+            }
+
+            // Always update the explicit ticketId and scannedBarcode keys as well for safety
+            statuses[ticketId] = {
+                ...(statuses[ticketId] || {}),
+                ...details,
+                status,
+                updatedAt: new Date().toISOString()
+            };
+            if (scannedBarcode) {
+                statuses[scannedBarcode] = {
+                    ...(statuses[scannedBarcode] || {}),
+                    ...details,
+                    status,
+                    updatedAt: new Date().toISOString()
+                };
+            }
+
+            writeRepairTicketStatuses(statuses);
+        }
+
+        const masterSkuMap = {};
+        let skuCounter = 10001;
+        function getMasterSku(itemName) {
+            if (!itemName) return "MSKU-99999";
+            if (!masterSkuMap[itemName]) {
+                masterSkuMap[itemName] = `MSKU-${skuCounter++}`;
+            }
+            return masterSkuMap[itemName];
+        }
+
+        function initializeTickets() {
+            const storedStatuses = readRepairTicketStatuses();
+            const seenItemCodes = new Set();
+            let needsWrite = false;
+
+            inspectionData.forEach((ticket, index) => {
+                const saved = storedStatuses[ticket.id] || storedStatuses[ticket.itemCode];
+                
+                // Analyze legacy duplicates to filter out
+                const isLegacy = ticket.id.startsWith("INH-");
+                let isLegacyQuarantined = false;
+                if (isLegacy) {
+                    if (seenItemCodes.has(ticket.itemCode)) {
+                        isLegacyQuarantined = true;
+                    } else {
+                        seenItemCodes.add(ticket.itemCode);
+                    }
+                }
+                
+                if (saved && saved.isLegacyQuarantined !== undefined) {
+                    isLegacyQuarantined = saved.isLegacyQuarantined;
+                }
+
+                // Hydrate Unified SKU and Report ID
+                const masterSku = (saved && saved.masterSku) || getMasterSku(ticket.itemName);
+                const reportId = masterSku;
+
+                if (!saved || saved.reportId !== reportId || saved.masterSku !== masterSku || saved.isLegacyQuarantined !== isLegacyQuarantined) {
+                    storedStatuses[ticket.id] = {
+                        status: (saved && saved.status) || 'Waiting Accept',
+                        repairSeconds: (saved && saved.repairSeconds) || 0,
+                        repairRunning: (saved && saved.repairRunning) || false,
+                        updatedAt: (saved && saved.updatedAt) || new Date().toISOString(),
+                        scanDate: (saved && saved.scanDate) || (ticket.source ? ticket.source.inspectedDate : null) || new Date().toISOString(),
+                        isLegacyQuarantined: isLegacyQuarantined,
+                        masterSku: masterSku,
+                        reportId: reportId
+                    };
+                    
+                    // Also mirror under itemCode
+                    storedStatuses[ticket.itemCode] = storedStatuses[ticket.id];
+                    needsWrite = true;
+                }
+            });
+
+            if (needsWrite) {
+                writeRepairTicketStatuses(storedStatuses);
+            }
+        }
+
+        // Load inspection data from public/inspection-data.json
+        let inspectionData = [];
+        async function fetchInspectionData() {
+            try {
+                const res = await fetch('/inspection-data.json');
+                if (res.ok) {
+                    inspectionData = await res.json();
+                    console.log('Successfully loaded inspection data:', inspectionData.length);
+                    
+                    // Hydrate local cache and match master SKUs
+                    initializeTickets();
+
+                    // Update initial value of partcode input with the first item's Report ID
+                    if (inspectionData.length > 0) {
+                        const input = document.getElementById('partcode-input');
+                        if (input && (input.value === 'INH-3-8395' || input.value === '01829265-WP' || input.value === 'MSKU-10001')) {
+                            const statuses = readRepairTicketStatuses();
+                            const firstTicketId = inspectionData[0].id;
+                            const stored = statuses[firstTicketId];
+                            input.value = (stored && stored.reportId) ? stored.reportId : 'MSKU-10001';
+                        }
+                    }
+                } else {
+                    console.error('Failed to load inspection data');
+                }
+            } catch (err) {
+                console.error('Error loading inspection data:', err);
+            }
+        }
+        fetchInspectionData();
+
+        // Mock items database
+        const mockDatabase = {
+            '01829265-WP': {
+                id: 'INH-3-8395',
+                partcode: '01829265-WP',
+                name: 'Nightstand 28 inch — Left Single Metro',
+                defect: 'A-04 (Crack / broken)'
+            },
+            '01835419-WP': {
+                id: 'INH-2-8482',
+                partcode: '01835419-WP',
+                name: 'Dresser 6-Drawer — Metro',
+                defect: 'V-08 (Veneer lay-up not correct with specs)'
+            },
+            'INH-3-8395': {
+                id: 'INH-3-8395',
+                partcode: '01829265-WP',
+                name: 'Nightstand 28 inch — Left Single Metro',
+                defect: 'A-04 (Crack / broken)'
+            },
+            'INH-4-8396': {
+                id: 'INH-4-8396',
+                partcode: '01835419-WP',
+                name: 'Dresser 6-Drawer — Metro',
+                defect: 'Oil leakage at joint seal'
+            },
+            'MOCK-PASS-123': {
+                id: 'MOCK-PASS-123',
+                partcode: 'MOCK-PASS-123',
+                name: 'Bedside Nightstand — Left Passed Unit',
+                defect: 'No defects, passed QA check',
+                passQty: 1
+            },
+            'DEFAULT': {
+                id: 'UNKNOWN-ITEM',
+                partcode: 'UNKNOWN-PART',
+                name: 'Custom Inspection Material Unit',
+                defect: 'Unspecified Surface Imperfection'
+            }
+        };
+
+        function getItemData(id) {
+            // Find item by partcode, itemName, ID, or itemCode
+            const found = inspectionData.find(item => 
+                (item.partcode && item.partcode === id) || 
+                (item.itemName && item.itemName === id) || 
+                item.id === id || 
+                item.itemCode === id
+            );
+            if (found) {
+                let passQty = 0;
+                if (found.source && found.source.passQty !== undefined) {
+                    passQty = Number(found.source.passQty);
+                } else if (found.passQty !== undefined) {
+                    passQty = Number(found.passQty);
+                }
+                return {
+                    id: found.id,
+                    name: found.itemName || found.itemCode || 'Unknown Item',
+                    defect: found.defectDescription || found.defectCode || 'No defect description',
+                    passQty: passQty
+                };
+            }
+            // Fallback to mockDatabase
+            if (mockDatabase[id]) {
+                return {
+                    ...mockDatabase[id],
+                    passQty: mockDatabase[id].passQty || 0
+                };
+            }
+            // Search mock database values for partcode/name matching
+            for (const key in mockDatabase) {
+                if (mockDatabase[key].partcode === id || mockDatabase[key].name === id) {
+                    return {
+                        ...mockDatabase[key],
+                        passQty: mockDatabase[key].passQty || 0
+                    };
+                }
+            }
+            return {
+                ...mockDatabase['DEFAULT'],
+                passQty: mockDatabase['DEFAULT'].passQty || 0
+            };
+        }
+
+        function showError(message) {
+            const errDiv = document.getElementById('barcode-error');
+            if (errDiv) {
+                errDiv.textContent = message;
+                errDiv.style.display = 'block';
+            } else {
+                alert(message);
+            }
+        }
+
+        function clearError() {
+            const errDiv = document.getElementById('barcode-error');
+            if (errDiv) {
+                errDiv.textContent = '';
+                errDiv.style.display = 'none';
+            }
+        }
+
+        // Clear error message when user starts typing again
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputEl = document.getElementById('partcode-input');
+            if (inputEl) {
+                inputEl.addEventListener('input', clearError);
+            }
+        });
+
+        function goToStep(step) {
+            // Hide all views
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`view-step${i}`).style.display = 'none';
+                document.getElementById(`step${i}-indicator`).classList.remove('active', 'completed');
+            }
+            document.getElementById('view-success').style.display = 'none';
+            document.getElementById('view-active-repair').style.display = 'none';
+            document.getElementById('view-completion-success').style.display = 'none';
+
+            if (elapsedTimerInterval) {
+                clearInterval(elapsedTimerInterval);
+                elapsedTimerInterval = null;
+            }
+
+            // Show stepper if we are past Step 1
+            if (step > 1) {
+                document.getElementById('stepperContainer').style.display = 'flex';
+                // Calculate progress line fill width
+                const fillPercent = ((step - 1) / 3) * 100;
+                document.getElementById('stepperLineFill').style.width = `${fillPercent}%`;
+            } else {
+                document.getElementById('stepperContainer').style.display = 'none';
+            }
+
+            // Set indicators
+            for (let i = 1; i <= 4; i++) {
+                const ind = document.getElementById(`step${i}-indicator`);
+                if (i < step) {
+                    ind.classList.add('completed');
+                } else if (i === step) {
+                    ind.classList.add('active');
+                }
+            }
+
+            // Render view
+            document.getElementById(`view-step${step}`).style.display = 'block';
+            currentStep = step;
+
+            // Initialize step specifics
+            if (step === 3) {
+                const title = document.getElementById('step3-title');
+                const desc = document.getElementById('step3-desc');
+
+                if (selectedInputMode === 'manual') {
+                    title.textContent = 'Manual Enter Quarantine Code';
+                    desc.textContent = 'Enter the repair item Quarantine Report Code (Master SKU) manually using the text field.';
+                    document.getElementById('step3-manual-ui').style.display = 'block';
+                    document.getElementById('step3-scan-ui').style.display = 'none';
+                } else {
+                    title.textContent = 'Scan Quarantine Code';
+                    desc.textContent = 'Position the camera viewfinder over the item Quarantine Report Code.';
+                    document.getElementById('step3-manual-ui').style.display = 'none';
+                    document.getElementById('step3-scan-ui').style.display = 'block';
+                }
+            }
+        }
+
+        function selectMode(mode) {
+            selectedInputMode = mode;
+
+            document.getElementById('mode-manual-card').classList.remove('selected');
+            document.getElementById('mode-scan-card').classList.remove('selected');
+
+            document.querySelector('input[value="manual"]').checked = false;
+            document.querySelector('input[value="scan"]').checked = false;
+
+            document.getElementById(`mode-${mode}-card`).classList.add('selected');
+            document.querySelector(`input[value="${mode}"]`).checked = true;
+        }
+
+        function submitBarcode() {
+            const val = document.getElementById('partcode-input').value.trim();
+            if (!val) {
+                showError('Please enter a valid Quarantine Report Code / Master SKU');
+                return;
+            }
+
+            clearError();
+
+            // First look up by quarantine report code (masterSku / reportId) in local storage
+            const statuses = readRepairTicketStatuses();
+            let resolvedId = null;
+            for (const id in statuses) {
+                const stored = statuses[id];
+                if (stored && (stored.reportId === val || stored.masterSku === val)) {
+                    resolvedId = id;
+                    break;
+                }
+            }
+
+            const queryVal = resolvedId || val;
+
+            // Check if Partcode or ID or item code exists in loaded inspection data
+            const exists = inspectionData.some(item => 
+                (item.partcode && item.partcode === queryVal) || 
+                (item.itemName && item.itemName === queryVal) || 
+                item.id === queryVal || 
+                item.itemCode === queryVal
+            ) || (queryVal in mockDatabase);
+            
+            if (!exists) {
+                showError(`Quarantine Report Code "${val}" does not exist or has not been initialized.`);
+                return;
+            }
+
+            // Check if any matching status entry for this code / resolved ID is already completed
+            let isAlreadyCompleted = false;
+            for (const key in statuses) {
+                const stored = statuses[key];
+                if (stored && (key === queryVal || key === val || stored.reportId === val || stored.masterSku === val || stored.reportId === queryVal || stored.masterSku === queryVal)) {
+                    if (stored.status === 'Completed') {
+                        isAlreadyCompleted = true;
+                        break;
+                    }
+                }
+            }
+
+            if (isAlreadyCompleted) {
+                showError(`Quarantine Report Code "${val}" has already been completed and cannot be repaired again.`);
+                return;
+            }
+
+            scannedBarcode = queryVal;
+
+            // Check if item is already under repair
+            let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
+            if (underRepair[queryVal]) {
+                showUnderRepairScreen(queryVal);
+                return;
+            }
+
+            loadItemDetails(queryVal);
+            goToStep(4);
+        }
+
+        function simulateScan() {
+            let val = '';
+            const statuses = readRepairTicketStatuses();
+            if (inspectionData.length > 0) {
+                // Select a random record from loaded data
+                const randomRecord = inspectionData[Math.floor(Math.random() * inspectionData.length)];
+                const stored = statuses[randomRecord.id];
+                val = (stored && stored.reportId) ? stored.reportId : 'MSKU-10001';
+            } else {
+                val = 'MSKU-10001';
+            }
+            scannedBarcode = val;
+
+            // Set values
+            document.getElementById('partcode-input').value = val;
+            clearError();
+
+            // Flash viewfinder visual effect
+            const vf = document.querySelector('.scanner-viewfinder');
+            vf.style.borderColor = 'var(--success-color)';
+            vf.style.background = '#e8f5e9';
+
+            setTimeout(() => {
+                vf.style.borderColor = 'var(--primary-color)';
+                vf.style.background = '#fafbfc';
+                
+                // Check if item is already under repair
+                let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
+                if (underRepair[val]) {
+                    showUnderRepairScreen(val);
+                } else {
+                    loadItemDetails(val);
+                    goToStep(4);
+                }
+            }, 800);
+        }
+
+        function determineLocationByDept(dept) {
+            const d = (dept || '').toUpperCase().trim();
+            if (d.includes('FINISH')) return 'VFR2.1 Finishing Yard Rework Station';
+            if (d.includes('ASSY') || d.includes('ASSEMBLY')) return 'VFR2.1 Assembly Line 2 Bay';
+            if (d.includes('SAND')) return 'Sanding Rework Area';
+            if (d.includes('INCOMING')) return 'Incoming Inspection Bay';
+            if (d.includes('IPQC')) return 'IPQC Rework Cell';
+            return `${dept || 'General Rework'} Workshop Section`;
+        }
+
+        function loadItemDetails(id) {
+            const item = getItemData(id);
+
+            // Reset location state for the new item
+            activeLocation = '';
+            showStep4SubView('main');
+        }
+
+        function showStep4SubView(subView) {
+            document.getElementById('view-step4-main').style.display = 'none';
+            document.getElementById('view-step4-location').style.display = 'none';
+            document.getElementById('view-step4-repair').style.display = 'none';
+            document.getElementById('view-step4-supplement').style.display = 'none';
+
+            document.getElementById(`view-step4-${subView}`).style.display = 'block';
+            
+            // Refresh info summaries
+            const item = getItemData(scannedBarcode);
+            const statuses = readRepairTicketStatuses();
+            const stored = statuses[scannedBarcode];
+            const reportId = (stored && stored.reportId) ? stored.reportId : (stored && stored.masterSku ? stored.masterSku : 'N/A');
+            
+            const rawTicket = inspectionData.find(t => t.id === scannedBarcode);
+            const itemCode = rawTicket ? rawTicket.itemCode : 'N/A';
+            const itemName = rawTicket ? rawTicket.itemName : item.name;
+
+            const statusSummary = `<strong>Quarantine Report ID:</strong> ${reportId} | <strong>Item ID:</strong> ${item.id}<br><strong>Item Code:</strong> ${itemCode} | <strong>Name:</strong> ${itemName}`;
+            
+            document.getElementById('step4-item-info-summary').innerHTML = statusSummary;
+            document.getElementById('step4-location-info-summary').innerHTML = statusSummary;
+            document.getElementById('step4-repair-info-summary').innerHTML = statusSummary;
+            document.getElementById('step4-supplement-info-summary').innerHTML = statusSummary;
+            
+            // Update button states/visuals based on active statuses
+            let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
+            const isUnderRepair = !!underRepair[scannedBarcode];
+            
+            // Repair timer UI elements
+            const timerDisplay = document.getElementById('repair-timer-display');
+            const startBtn = document.getElementById('btn-start-repair');
+            const endBtn = document.getElementById('btn-end-repair');
+            
+            if (isUnderRepair) {
+                timerDisplay.style.display = 'block';
+                startBtn.style.opacity = '0.5';
+                startBtn.disabled = true;
+                endBtn.style.opacity = '1.0';
+                endBtn.disabled = false;
+                
+                // Keep the active elapsed timer sync
+                const repairData = underRepair[scannedBarcode];
+                const startTime = new Date(repairData.startTime);
+                
+                if (elapsedTimerInterval) clearInterval(elapsedTimerInterval);
+                function updateStep4Timer() {
+                    const now = new Date();
+                    const diffMs = now - startTime;
+                    const diffSecs = Math.max(0, Math.floor(diffMs / 1000));
+                    const hours = Math.floor(diffSecs / 3600);
+                    const minutes = Math.floor((diffSecs % 3600) / 60);
+                    const seconds = diffSecs % 60;
+                    const pad = (num) => String(num).padStart(2, '0');
+                    document.getElementById('repair-elapsed-time').textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+                }
+                updateStep4Timer();
+                elapsedTimerInterval = setInterval(updateStep4Timer, 1000);
+            } else {
+                timerDisplay.style.display = 'none';
+                startBtn.style.opacity = '1.0';
+                startBtn.disabled = false;
+                endBtn.style.opacity = '0.5';
+                endBtn.disabled = true;
+                if (elapsedTimerInterval) {
+                    clearInterval(elapsedTimerInterval);
+                    elapsedTimerInterval = null;
+                }
+            }
+            
+            // Supplement state display
+            const receiveBtn = document.getElementById('btn-receive-supplement');
+            const foundRecord = inspectionData.find(x => x.id === item.id || x.itemCode === item.id || (x.partcode && x.partcode === scannedBarcode) || (x.itemName && x.itemName === scannedBarcode));
+            if (foundRecord && foundRecord.supplement && foundRecord.supplement.needed) {
+                const statuses = readRepairTicketStatuses();
+                const ticketSaved = statuses[item.id] || {};
+                const supplementReceived = ticketSaved.supplementReceived || (foundRecord.supplement.status === 'received');
+                
+                if (supplementReceived) {
+                    receiveBtn.textContent = '✔️ Supplement Received';
+                    receiveBtn.style.opacity = '0.6';
+                    receiveBtn.disabled = true;
+                } else {
+                    receiveBtn.textContent = '✔️ Mark Received (Awaiting Part)';
+                    receiveBtn.style.opacity = '1.0';
+                    receiveBtn.disabled = false;
+                }
+            } else {
+                receiveBtn.textContent = 'No Supplement Needed';
+                receiveBtn.style.opacity = '0.5';
+                receiveBtn.disabled = true;
+            }
+        }
+
+        function handleArriveAtRepair() {
+            const item = getItemData(scannedBarcode);
+            const ticketId = item.id || scannedBarcode;
+            const targetLoc = determineLocationByDept(item.fromDept || 'General Rework');
+            activeLocation = targetLoc;
+            
+            // Set in local statuses immediately
+            updateRepairTicketStatus(ticketId, 'In Progress', {
+                location: targetLoc,
+                updatedAt: new Date().toISOString()
+            });
+            alert(`📍 Arrived at repair department: ${targetLoc}`);
+            showStep4SubView('location');
+        }
+
+        function handleReturnToInspection() {
+            const item = getItemData(scannedBarcode);
+            const ticketId = item.id || scannedBarcode;
+            const targetLoc = 'Inspection Department';
+            activeLocation = targetLoc;
+            
+            // Set in local statuses immediately
+            updateRepairTicketStatus(ticketId, 'Waiting Accept', {
+                location: targetLoc,
+                updatedAt: new Date().toISOString()
+            });
+            alert(`📍 Returned to inspection department: ${targetLoc}`);
+            showStep4SubView('location');
+        }
+
+        function handleStartRepair() {
+            // Check if already under repair
+            let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
+            if (underRepair[scannedBarcode]) {
+                alert('Item is already under repair.');
+                return;
+            }
+            
+            const item = getItemData(scannedBarcode);
+            const ticketId = item.id || scannedBarcode;
+            const startedAt = new Date().toISOString();
+            
+            // Register active repair state
+            underRepair[scannedBarcode] = {
+                ticketId: ticketId,
+                id: scannedBarcode,
+                name: item.name,
+                defect: item.defect,
+                workers: 1, // default worker count
+                location: activeLocation || 'Repair Station',
+                startTime: startedAt
+            };
+            localStorage.setItem('qms_under_repair', JSON.stringify(underRepair));
+            
+            updateRepairTicketStatus(ticketId, 'In Progress', {
+                repairRunning: true,
+                repairSeconds: 0,
+                startedAt: startedAt,
+                workers: 1,
+                location: activeLocation || 'Repair Station'
+            });
+            
+            alert('▶️ Repair process started!');
+            showStep4SubView('repair');
+        }
+
+        function handleEndRepair() {
+            let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
+            const repairData = underRepair[scannedBarcode];
+            if (!repairData) {
+                alert('No active repair process found.');
+                return;
+            }
+            
+            // Terminate timer and finalize
+            confirmEndRepair();
+        }
+
+        function handleReceiveSupplement() {
+            const item = getItemData(scannedBarcode);
+            const ticketId = item.id || scannedBarcode;
+            
+            // Mark supplement as received in statuses
+            const statuses = readRepairTicketStatuses();
+            statuses[ticketId] = {
+                ...(statuses[ticketId] || {}),
+                supplementReceived: true,
+                updatedAt: new Date().toISOString()
+            };
+            writeRepairTicketStatuses(statuses);
+            
+            alert('✔️ Supplement marked as Received.');
+            showStep4SubView('supplement');
+        }
+
+
+
+        function showUnderRepairScreen(id) {
+            scannedBarcode = id;
+            goToStep(4);
+            showStep4SubView('repair');
+        }
+
+        function confirmEndRepair() {
+            if (elapsedTimerInterval) {
+                clearInterval(elapsedTimerInterval);
+                elapsedTimerInterval = null;
+            }
+
+            // Retrieve repair data before deleting it
+            let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
+            const repairData = underRepair[scannedBarcode];
+            const item = getItemData(scannedBarcode);
+            const ticketId = repairData && repairData.ticketId ? repairData.ticketId : (item.id || scannedBarcode);
+
+            // Delete the repair process from the active list
+            delete underRepair[scannedBarcode];
+            localStorage.setItem('qms_under_repair', JSON.stringify(underRepair));
+
+            // Calculate elapsed time text
+            let elapsedText = "Unknown";
+            if (repairData && repairData.startTime) {
+                const start = new Date(repairData.startTime);
+                const end = new Date();
+                const diffMs = end - start;
+                const diffSecs = Math.max(0, Math.floor(diffMs / 1000));
+                const hours = Math.floor(diffSecs / 3600);
+                const minutes = Math.floor((diffSecs % 3600) / 60);
+                const seconds = diffSecs % 60;
+                const pad = (num) => String(num).padStart(2, '0');
+                elapsedText = `${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+                updateRepairTicketStatus(ticketId, 'Completed', {
+                    repairRunning: false,
+                    repairSeconds: diffSecs,
+                    completedAt: end.toISOString()
+                });
+            } else {
+                updateRepairTicketStatus(ticketId, 'Completed', {
+                    repairRunning: false,
+                    completedAt: new Date().toISOString()
+                });
+            }
+
+            // Set the success message
+            document.getElementById('completion-success-msg').innerHTML = `
+                The repair process for item <strong>${scannedBarcode}</strong> has been marked as done.<br>
+                Total duration: <strong>${elapsedText}</strong>.
+            `;
+
+            // Hide active screen, show completion success screen
+            document.getElementById('view-active-repair').style.display = 'none';
+            document.getElementById('view-step4').style.display = 'none';
+            document.getElementById('view-completion-success').style.display = 'block';
+        }
+
+        function resetWorkflow() {
+            currentStep = 1;
+            selectedInputMode = 'manual';
+            scannedBarcode = '';
+            workerCount = 1;
+            activeLocation = '';
+
+            document.getElementById('partcode-input').value = inspectionData.length > 0 ? (inspectionData[0].partcode || inspectionData[0].itemName || inspectionData[0].id) : '01829265-WP';
+            const workerEl = document.getElementById('worker-count');
+            if (workerEl) workerEl.value = 1;
+            clearError();
+
+            selectMode('manual');
+            goToStep(1);
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('username');
+            localStorage.removeItem('role');
+            window.location.href = '/index.html';
+        }
+
+        // Listen for storage clear to reset worker workflow in real-time
+        window.addEventListener('storage', (e) => {
+            if (e.key === REPAIR_TICKET_STATUS_KEY && !localStorage.getItem(REPAIR_TICKET_STATUS_KEY)) {
+                resetWorkflow();
+            }
+        });
+    </script>
+</body>
+
+</html>
