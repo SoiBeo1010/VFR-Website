@@ -307,10 +307,12 @@
                 transform: scale(0.9);
                 box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
             }
+
             70% {
                 transform: scale(1.1);
                 box-shadow: 0 0 0 8px rgba(245, 158, 11, 0);
             }
+
             100% {
                 transform: scale(0.9);
                 box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
@@ -368,7 +370,8 @@
                         <h2
                             style="font-size: 1.6rem; color: var(--text-color); margin-bottom: 1rem; font-weight: bold;">
                             Main Menu</h2>
-                        <p style="color: var(--text-light); margin-bottom: 2rem;">Scan or enter a quarantine item's report code (Master SKU) to
+                        <p style="color: var(--text-light); margin-bottom: 2rem;">Scan or enter a quarantine item's
+                            report code (Master SKU) to
                             assign workers and start the repair operation.</p>
 
                         <div style="font-size: 5rem; margin-bottom: 2rem;">🛠️</div>
@@ -419,11 +422,14 @@
                         <div id="step3-manual-ui">
                             <div style="margin-bottom: 1rem;">
                                 <label
-                                    style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 6px; color: var(--text-light); text-transform: uppercase;">Quarantine Report Code</label>
+                                    style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 6px; color: var(--text-light); text-transform: uppercase;">Quarantine
+                                    Report Code</label>
                                 <input type="text" id="partcode-input" class="form-input" placeholder="e.g. MSKU-10001"
                                     value="MSKU-10001">
                             </div>
-                            <div id="barcode-error" style="color: var(--danger-color); font-size: 13.5px; font-weight: 500; margin-top: -0.5rem; margin-bottom: 1rem; display: none;"></div>
+                            <div id="barcode-error"
+                                style="color: var(--danger-color); font-size: 13.5px; font-weight: 500; margin-top: -0.5rem; margin-bottom: 1rem; display: none;">
+                            </div>
                             <button class="btn btn-primary" onclick="submitBarcode()"
                                 style="width: 100%; padding: 0.75rem;">Submit</button>
                         </div>
@@ -451,25 +457,32 @@
                     <div id="view-step4" style="display: none;">
                         <!-- Sub-view 4A: Main Menu -->
                         <div id="view-step4-main" style="text-align: center;">
-                            <h2 style="font-size: 1.6rem; color: var(--text-color); margin-bottom: 0.5rem; font-weight: bold;">Main Menu</h2>
-                            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;" id="step4-item-info-summary"></p>
-                            
+                            <h2
+                                style="font-size: 1.6rem; color: var(--text-color); margin-bottom: 0.5rem; font-weight: bold;">
+                                Main Menu</h2>
+                            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;"
+                                id="step4-item-info-summary"></p>
+
                             <!-- Hammer and Wrench Icon -->
                             <div style="font-size: 5rem; margin-bottom: 2rem;">🛠️</div>
 
                             <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
-                                <button class="btn btn-primary" onclick="showStep4SubView('location')" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                <button class="btn btn-primary" onclick="showStep4SubView('location')"
+                                    style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
                                     <span>📍</span> Location update
                                 </button>
-                                <button class="btn btn-primary" onclick="showStep4SubView('repair')" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                <button class="btn btn-primary" onclick="showStep4SubView('repair')"
+                                    style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
                                     <span>🕒</span> Repair time
                                 </button>
-                                <button class="btn btn-primary" onclick="showStep4SubView('supplement')" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                <button class="btn btn-primary" onclick="showStep4SubView('supplement')"
+                                    style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
                                     <span>📦</span> Supplement status
                                 </button>
                             </div>
 
-                            <button class="btn btn-secondary" onclick="goToStep(3)" style="width: 100%; padding: 0.75rem; border-radius: 8px; background-color: #f3f4f6; color: #4b5563; border: none; font-weight: 600;">
+                            <button class="btn btn-secondary" onclick="goToStep(3)"
+                                style="width: 100%; padding: 0.75rem; border-radius: 8px; background-color: #f3f4f6; color: #4b5563; border: none; font-weight: 600;">
                                 ← Back to Scan
                             </button>
                         </div>
@@ -477,21 +490,28 @@
                         <!-- Sub-view 4B: Location update -->
                         <div id="view-step4-location" style="display: none; text-align: center;">
                             <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
-                                <button class="btn-ghost" onclick="showStep4SubView('main')" style="border: none; background: none; font-size: 1.5rem; color: var(--primary-color); cursor: pointer;">←</button>
-                                <h2 style="font-size: 1.6rem; color: var(--text-color); font-weight: bold; flex: 1; margin-right: 2rem;">Location update</h2>
+                                <button class="btn-ghost" onclick="showStep4SubView('main')"
+                                    style="border: none; background: none; font-size: 1.5rem; color: var(--primary-color); cursor: pointer;">←</button>
+                                <h2
+                                    style="font-size: 1.6rem; color: var(--text-color); font-weight: bold; flex: 1; margin-right: 2rem;">
+                                    Location update</h2>
                             </div>
-                            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;" id="step4-location-info-summary"></p>
+                            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;"
+                                id="step4-location-info-summary"></p>
 
                             <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
-                                <button class="btn btn-primary" onclick="handleArriveAtRepair()" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                <button class="btn btn-primary" onclick="handleArriveAtRepair()"
+                                    style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
                                     <span>📍</span> Arrive at repair department
                                 </button>
-                                <button class="btn btn-primary" onclick="handleReturnToInspection()" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                <button class="btn btn-primary" onclick="handleReturnToInspection()"
+                                    style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
                                     <span>↩️</span> Return to inspection
                                 </button>
                             </div>
 
-                            <button class="btn btn-secondary" onclick="showStep4SubView('main')" style="width: 100%; padding: 0.75rem; border-radius: 8px; background-color: #e5e7eb; color: #374151; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <button class="btn btn-secondary" onclick="showStep4SubView('main')"
+                                style="width: 100%; padding: 0.75rem; border-radius: 8px; background-color: #e5e7eb; color: #374151; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
                                 <span>←</span> Back
                             </button>
                         </div>
@@ -499,27 +519,39 @@
                         <!-- Sub-view 4C: Repair time -->
                         <div id="view-step4-repair" style="display: none; text-align: center;">
                             <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
-                                <button class="btn-ghost" onclick="showStep4SubView('main')" style="border: none; background: none; font-size: 1.5rem; color: var(--primary-color); cursor: pointer;">←</button>
-                                <h2 style="font-size: 1.6rem; color: var(--text-color); font-weight: bold; flex: 1; margin-right: 2rem;">Repair time</h2>
+                                <button class="btn-ghost" onclick="showStep4SubView('main')"
+                                    style="border: none; background: none; font-size: 1.5rem; color: var(--primary-color); cursor: pointer;">←</button>
+                                <h2
+                                    style="font-size: 1.6rem; color: var(--text-color); font-weight: bold; flex: 1; margin-right: 2rem;">
+                                    Repair time</h2>
                             </div>
-                            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;" id="step4-repair-info-summary"></p>
+                            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;"
+                                id="step4-repair-info-summary"></p>
 
                             <!-- Running Timer display if active -->
-                            <div id="repair-timer-display" style="display: none; background: #e8f5e9; border: 1px solid var(--primary-color); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                                <div style="font-size: 11px; text-transform: uppercase; color: var(--primary-color); font-weight: bold;">Repair Timer Running</div>
-                                <div id="repair-elapsed-time" style="font-size: 2rem; font-weight: bold; font-family: monospace; color: var(--primary-color); margin-top: 4px;">00:00:00</div>
+                            <div id="repair-timer-display"
+                                style="display: none; background: #e8f5e9; border: 1px solid var(--primary-color); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                                <div
+                                    style="font-size: 11px; text-transform: uppercase; color: var(--primary-color); font-weight: bold;">
+                                    Repair Timer Running</div>
+                                <div id="repair-elapsed-time"
+                                    style="font-size: 2rem; font-weight: bold; font-family: monospace; color: var(--primary-color); margin-top: 4px;">
+                                    00:00:00</div>
                             </div>
 
                             <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
-                                <button class="btn btn-primary" id="btn-start-repair" onclick="handleStartRepair()" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                <button class="btn btn-primary" id="btn-start-repair" onclick="handleStartRepair()"
+                                    style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
                                     <span>▶</span> Start repair
                                 </button>
-                                <button class="btn btn-primary" id="btn-end-repair" onclick="handleEndRepair()" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
+                                <button class="btn btn-primary" id="btn-end-repair" onclick="handleEndRepair()"
+                                    style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 1rem; border-radius: 8px;">
                                     <span>■</span> End repair
                                 </button>
                             </div>
 
-                            <button class="btn btn-secondary" onclick="showStep4SubView('main')" style="width: 100%; padding: 0.75rem; border-radius: 8px; background-color: #e5e7eb; color: #374151; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <button class="btn btn-secondary" onclick="showStep4SubView('main')"
+                                style="width: 100%; padding: 0.75rem; border-radius: 8px; background-color: #e5e7eb; color: #374151; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
                                 <span>←</span> Back
                             </button>
                         </div>
@@ -527,16 +559,22 @@
                         <!-- Sub-view 4D: Supplement status -->
                         <div id="view-step4-supplement" style="display: none; text-align: center;">
                             <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
-                                <button class="btn-ghost" onclick="showStep4SubView('main')" style="border: none; background: none; font-size: 1.5rem; color: var(--primary-color); cursor: pointer;">←</button>
-                                <h2 style="font-size: 1.6rem; color: var(--text-color); font-weight: bold; flex: 1; margin-right: 2rem;">Supplement status</h2>
+                                <button class="btn-ghost" onclick="showStep4SubView('main')"
+                                    style="border: none; background: none; font-size: 1.5rem; color: var(--primary-color); cursor: pointer;">←</button>
+                                <h2
+                                    style="font-size: 1.6rem; color: var(--text-color); font-weight: bold; flex: 1; margin-right: 2rem;">
+                                    Supplement status</h2>
                             </div>
-                            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;" id="step4-supplement-info-summary"></p>
+                            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;"
+                                id="step4-supplement-info-summary"></p>
                             <!-- List of supplements container -->
-                            <div id="worker-supplements-list-container" style="display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 2rem; max-height: 50vh; overflow-y: auto; text-align: left; padding: 0.5rem;">
+                            <div id="worker-supplements-list-container"
+                                style="display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 2rem; max-height: 50vh; overflow-y: auto; text-align: left; padding: 0.5rem;">
                                 <!-- Dynamic rows of supplements render here -->
                             </div>
 
-                            <button class="btn btn-secondary" onclick="showStep4SubView('main')" style="width: 100%; padding: 0.75rem; border-radius: 8px; background-color: #e5e7eb; color: #374151; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <button class="btn btn-secondary" onclick="showStep4SubView('main')"
+                                style="width: 100%; padding: 0.75rem; border-radius: 8px; background-color: #e5e7eb; color: #374151; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
                                 <span>←</span> Back
                             </button>
                         </div>
@@ -558,7 +596,8 @@
 
                     <!-- ACTIVE REPAIR PROCESS SCREEN -->
                     <div id="view-active-repair" style="display: none;">
-                        <h2 style="font-size: 1.4rem; color: var(--text-color); margin-bottom: 0.5rem; font-weight: bold;">
+                        <h2
+                            style="font-size: 1.4rem; color: var(--text-color); margin-bottom: 0.5rem; font-weight: bold;">
                             Active Repair Process
                         </h2>
                         <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;">
@@ -568,7 +607,8 @@
                         <div class="info-panel" style="border-left: 4px solid var(--warning-color);">
                             <div class="info-row">
                                 <div class="info-label">Status</div>
-                                <div class="info-val" style="color: var(--warning-color); font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                                <div class="info-val"
+                                    style="color: var(--warning-color); font-weight: bold; display: flex; align-items: center; gap: 6px;">
                                     <span class="pulse-dot"></span> In Progress
                                 </div>
                             </div>
@@ -590,7 +630,8 @@
                             </div>
                             <div class="info-row">
                                 <div class="info-label">Repair Location</div>
-                                <div class="info-val" id="active-location" style="color: var(--primary-color); font-weight: bold;"></div>
+                                <div class="info-val" id="active-location"
+                                    style="color: var(--primary-color); font-weight: bold;"></div>
                             </div>
                             <div class="info-row">
                                 <div class="info-label">Start Time</div>
@@ -598,7 +639,9 @@
                             </div>
                             <div class="info-row">
                                 <div class="info-label">Elapsed Time</div>
-                                <div class="info-val" id="active-elapsed" style="font-family: monospace; font-size: 1.1rem; color: var(--primary-color); font-weight: bold;">00:00:00</div>
+                                <div class="info-val" id="active-elapsed"
+                                    style="font-family: monospace; font-size: 1.1rem; color: var(--primary-color); font-weight: bold;">
+                                    00:00:00</div>
                             </div>
                         </div>
 
@@ -616,7 +659,8 @@
                     <div id="view-completion-success" style="display: none;">
                         <div class="success-state">
                             <div class="success-icon" style="color: var(--success-color);">🎉</div>
-                            <h2 style="font-size: 1.6rem; color: var(--text-color); margin-bottom: 0.5rem; font-weight: bold;">
+                            <h2
+                                style="font-size: 1.6rem; color: var(--text-color); margin-bottom: 0.5rem; font-weight: bold;">
                                 Repair Completed!
                             </h2>
                             <p style="color: var(--text-light); margin-bottom: 2rem;" id="completion-success-msg">
@@ -625,6 +669,109 @@
                             <button class="btn btn-primary" onclick="resetWorkflow()"
                                 style="width: 100%; padding: 0.75rem;">Return to Main Menu</button>
                         </div>
+                    </div>
+
+                    <!-- WORKER TIME LOG SCREEN -->
+                    <div id="view-worker-time" style="display: none; text-align: left;">
+                        <h2
+                            style="font-size: 1.45rem; color: var(--text-color); margin-bottom: 0.25rem; font-weight: bold; text-align: center;">
+                            ⏱️ Log Worker Time
+                        </h2>
+                        <p
+                            style="color: var(--text-light); font-size: 0.875rem; margin-bottom: 1.25rem; text-align: center;">
+                            Confirm hours each worker spent on this repair. Labour cost = time × dept rate.
+                        </p>
+
+                        <!-- Total elapsed summary -->
+                        <div
+                            style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.875rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: #166534; font-weight: 600;">🕒 Total Repair Time:</span>
+                            <span id="wt-total-elapsed"
+                                style="font-family: monospace; font-weight: 700; font-size: 1rem; color: #15803d;">00:00</span>
+                        </div>
+
+                        <!-- Per-worker time rows -->
+                        <div id="worker-time-rows" style="margin-bottom: 1.25rem;"></div>
+
+                        <!-- Estimated cost preview -->
+                        <div id="wt-cost-preview"
+                            style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.875rem;">
+                            <div style="font-weight: 700; color: #1d4ed8; margin-bottom: 4px;">Estimated Total Labour
+                                Cost</div>
+                            <div id="wt-cost-detail" style="color: #374151; line-height: 1.6;"></div>
+                            <div id="wt-cost-total"
+                                style="font-size: 1.05rem; font-weight: 700; color: #1e40af; margin-top: 6px;"></div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="finalizeRepair()"
+                            style="width: 100%; padding: 1rem; font-size: 1.05rem; font-weight: bold; border-radius: 8px;">
+                            ✔ Confirm &amp; Complete Repair
+                        </button>
+                    </div>
+
+                    <!-- WORKER PARTICIPANT INPUT STATE -->
+                    <div id="view-worker-input" style="display: none; text-align: left;">
+                        <h2
+                            style="font-size: 1.5rem; color: var(--text-color); margin-bottom: 0.25rem; font-weight: bold; text-align: center;">
+                            👷 Worker Participants
+                        </h2>
+                        <p
+                            style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem; text-align: center;">
+                            Add all workers participating in this repair. Labour cost will be calculated based on each
+                            worker's department salary rate.
+                        </p>
+
+                        <!-- Add Worker Row -->
+                        <div
+                            style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
+                            <div
+                                style="font-size: 12px; font-weight: bold; color: var(--text-light); text-transform: uppercase; margin-bottom: 10px;">
+                                Add Participant</div>
+                            <div style="display: flex; gap: 0.75rem; align-items: flex-end;">
+                                <div style="flex: 1;">
+                                    <label
+                                        style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 4px;">Worker
+                                        Name / ID</label>
+                                    <input type="text" id="new-worker-name" class="form-input"
+                                        placeholder="e.g. Nguyen Van A"
+                                        style="padding: 0.6rem 0.75rem; font-size: 0.875rem;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label
+                                        style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 4px;">Department</label>
+                                    <select id="new-worker-dept" class="form-input"
+                                        style="padding: 0.6rem 0.75rem; font-size: 0.875rem; background: white;">
+                                        <option value="ASSEMBLY">Assembly ($22/hr)</option>
+                                        <option value="FINISHING">Finishing ($24/hr)</option>
+                                        <option value="MACHINERY">Machinery ($26/hr)</option>
+                                        <option value="UPHOLSTERY">Upholstery ($28/hr)</option>
+                                        <option value="CARCASS">Carcass ($25/hr)</option>
+                                        <option value="COMPONENT">Component ($20/hr)</option>
+                                        <option value="SUBCON">Subcontract ($30/hr)</option>
+                                        <option value="DEFAULT">General ($25/hr)</option>
+                                    </select>
+                                </div>
+                                <button onclick="addWorkerParticipant()"
+                                    style="flex-shrink: 0; padding: 0.6rem 1rem; background: var(--primary-color); color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 0.875rem; cursor: pointer; height: 38px;">+
+                                    Add</button>
+                            </div>
+                        </div>
+
+                        <!-- Participants List -->
+                        <div id="worker-participants-list" style="margin-bottom: 1.25rem; min-height: 60px;"></div>
+
+                        <!-- Labour Cost Preview -->
+                        <div id="labour-cost-preview"
+                            style="display: none; background: #e8f5e9; border: 1px solid var(--primary-color); border-radius: 8px; padding: 0.875rem 1rem; margin-bottom: 1.25rem; font-size: 0.875rem;">
+                            <div style="font-weight: 700; color: var(--primary-color); margin-bottom: 4px;">Estimated
+                                Labour Cost</div>
+                            <div id="labour-cost-preview-detail" style="color: #374151; line-height: 1.6;"></div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="submitWorkerParticipants()"
+                            style="width: 100%; padding: 1rem; font-size: 1.05rem; font-weight: bold; border-radius: 8px;">
+                            ✔ Confirm &amp; Start Repair
+                        </button>
                     </div>
 
                 </div>
@@ -676,11 +823,11 @@
             if (!ticketId) return;
 
             const statuses = readRepairTicketStatuses();
-            
+
             // Find all tickets that match either the ticketId or scannedBarcode or itemCode
-            const matchingTickets = inspectionData.filter(item => 
-                item.id === ticketId || 
-                item.itemCode === ticketId || 
+            const matchingTickets = inspectionData.filter(item =>
+                item.id === ticketId ||
+                item.itemCode === ticketId ||
                 (scannedBarcode && (item.id === scannedBarcode || item.itemCode === scannedBarcode))
             );
 
@@ -753,12 +900,12 @@
 
             inspectionData.forEach((ticket, index) => {
                 const saved = storedStatuses[ticket.id] || storedStatuses[ticket.itemCode];
-                
+
                 // Strip synced supplement from raw data
                 if (ticket.supplement && (!saved || !saved.supplement)) {
                     delete ticket.supplement;
                 }
-                
+
                 if (saved) {
                     if (saved.supplements) {
                         ticket.supplements = saved.supplements;
@@ -769,7 +916,7 @@
                     } else if (saved.supplement) {
                         // Migrate legacy supplement requests that don't have a requestCode
                         if (!saved.supplement.requestCode) {
-                            saved.supplement.requestCode = ticket.supplement_request_code || `SRC-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,'0')}-${String(Math.floor(1000 + Math.random()*9000))}`;
+                            saved.supplement.requestCode = ticket.supplement_request_code || `SRC-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Math.floor(1000 + Math.random() * 9000))}`;
                             needsWrite = true;
                         }
                         ticket.supplement = saved.supplement;
@@ -778,7 +925,7 @@
                         needsWrite = true;
                     }
                 }
-                
+
                 // Analyze legacy duplicates to filter out
                 const isLegacy = ticket.id.startsWith("INH-");
                 let isLegacyQuarantined = false;
@@ -789,7 +936,7 @@
                         seenItemCodes.add(ticket.itemCode);
                     }
                 }
-                
+
                 if (saved && saved.isLegacyQuarantined !== undefined) {
                     isLegacyQuarantined = saved.isLegacyQuarantined;
                 }
@@ -809,7 +956,7 @@
                         masterSku: masterSku,
                         reportId: reportId
                     };
-                    
+
                     // Also mirror under itemCode
                     storedStatuses[ticket.itemCode] = storedStatuses[ticket.id];
                     needsWrite = true;
@@ -829,7 +976,7 @@
                 if (res.ok) {
                     inspectionData = await res.json();
                     console.log('Successfully loaded inspection data:', inspectionData.length);
-                    
+
                     // Hydrate local cache and match master SKUs
                     initializeTickets();
 
@@ -895,10 +1042,10 @@
 
         function getItemData(id) {
             // Find item by partcode, itemName, ID, or itemCode
-            const found = inspectionData.find(item => 
-                (item.partcode && item.partcode === id) || 
-                (item.itemName && item.itemName === id) || 
-                item.id === id || 
+            const found = inspectionData.find(item =>
+                (item.partcode && item.partcode === id) ||
+                (item.itemName && item.itemName === id) ||
+                item.id === id ||
                 item.itemCode === id
             );
             if (found) {
@@ -972,6 +1119,12 @@
             document.getElementById('view-success').style.display = 'none';
             document.getElementById('view-active-repair').style.display = 'none';
             document.getElementById('view-completion-success').style.display = 'none';
+            if (document.getElementById('view-worker-input')) {
+                document.getElementById('view-worker-input').style.display = 'none';
+            }
+            if (document.getElementById('view-worker-time')) {
+                document.getElementById('view-worker-time').style.display = 'none';
+            }
 
             if (elapsedTimerInterval) {
                 clearInterval(elapsedTimerInterval);
@@ -1057,13 +1210,13 @@
             const queryVal = resolvedId || val;
 
             // Check if Partcode or ID or item code exists in loaded inspection data
-            const exists = inspectionData.some(item => 
-                (item.partcode && item.partcode === queryVal) || 
-                (item.itemName && item.itemName === queryVal) || 
-                item.id === queryVal || 
+            const exists = inspectionData.some(item =>
+                (item.partcode && item.partcode === queryVal) ||
+                (item.itemName && item.itemName === queryVal) ||
+                item.id === queryVal ||
                 item.itemCode === queryVal
             ) || (queryVal in mockDatabase);
-            
+
             if (!exists) {
                 showError(`Quarantine Report Code "${val}" does not exist or has not been initialized.`);
                 return;
@@ -1088,25 +1241,29 @@
 
             scannedBarcode = queryVal;
 
-            // Check if item is already under repair
+            // Check if item is already under repair (Scan End)
             let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
             if (underRepair[queryVal]) {
-                showUnderRepairScreen(queryVal);
+                confirmEndRepair();
                 return;
             }
 
-            loadItemDetails(queryVal);
-            goToStep(4);
+            // Start repair (Scan Start)
+            startRepairAutomatically(queryVal);
         }
 
         function simulateScan() {
             let val = '';
             const statuses = readRepairTicketStatuses();
             if (inspectionData.length > 0) {
-                // Select a random record from loaded data
-                const randomRecord = inspectionData[Math.floor(Math.random() * inspectionData.length)];
-                const stored = statuses[randomRecord.id];
-                val = (stored && stored.reportId) ? stored.reportId : 'MSKU-10001';
+                // Find a ticket that is not completed
+                const activeTickets = inspectionData.filter(t => {
+                    const stored = statuses[t.id];
+                    return !stored || stored.status !== 'Completed';
+                });
+                const chosen = activeTickets.length > 0 ? activeTickets[0] : inspectionData[0];
+                const stored = statuses[chosen.id];
+                val = (stored && (stored.reportId || stored.masterSku)) ? (stored.reportId || stored.masterSku) : chosen.id;
             } else {
                 val = 'MSKU-10001';
             }
@@ -1124,15 +1281,8 @@
             setTimeout(() => {
                 vf.style.borderColor = 'var(--primary-color)';
                 vf.style.background = '#fafbfc';
-                
-                // Check if item is already under repair
-                let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
-                if (underRepair[val]) {
-                    showUnderRepairScreen(val);
-                } else {
-                    loadItemDetails(val);
-                    goToStep(4);
-                }
+
+                submitBarcode();
             }, 800);
         }
 
@@ -1161,44 +1311,44 @@
             document.getElementById('view-step4-supplement').style.display = 'none';
 
             document.getElementById(`view-step4-${subView}`).style.display = 'block';
-            
+
             // Refresh info summaries
             const item = getItemData(scannedBarcode);
             const statuses = readRepairTicketStatuses();
             const stored = statuses[scannedBarcode];
             const reportId = (stored && stored.reportId) ? stored.reportId : (stored && stored.masterSku ? stored.masterSku : 'N/A');
-            
+
             const rawTicket = inspectionData.find(t => t.id === scannedBarcode);
             const itemCode = rawTicket ? rawTicket.itemCode : 'N/A';
             const itemName = rawTicket ? rawTicket.itemName : item.name;
 
             const statusSummary = `<strong>Quarantine Report ID:</strong> ${reportId} | <strong>Item ID:</strong> ${item.id}<br><strong>Item Code:</strong> ${itemCode} | <strong>Name:</strong> ${itemName}`;
-            
+
             document.getElementById('step4-item-info-summary').innerHTML = statusSummary;
             document.getElementById('step4-location-info-summary').innerHTML = statusSummary;
             document.getElementById('step4-repair-info-summary').innerHTML = statusSummary;
             document.getElementById('step4-supplement-info-summary').innerHTML = statusSummary;
-            
+
             // Update button states/visuals based on active statuses
             let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
             const isUnderRepair = !!underRepair[scannedBarcode];
-            
+
             // Repair timer UI elements
             const timerDisplay = document.getElementById('repair-timer-display');
             const startBtn = document.getElementById('btn-start-repair');
             const endBtn = document.getElementById('btn-end-repair');
-            
+
             if (isUnderRepair) {
                 timerDisplay.style.display = 'block';
                 startBtn.style.opacity = '0.5';
                 startBtn.disabled = true;
                 endBtn.style.opacity = '1.0';
                 endBtn.disabled = false;
-                
+
                 // Keep the active elapsed timer sync
                 const repairData = underRepair[scannedBarcode];
                 const startTime = new Date(repairData.startTime);
-                
+
                 if (elapsedTimerInterval) clearInterval(elapsedTimerInterval);
                 function updateStep4Timer() {
                     const now = new Date();
@@ -1223,11 +1373,11 @@
                     elapsedTimerInterval = null;
                 }
             }
-            
+
             // Supplement state display
             const listContainer = document.getElementById('worker-supplements-list-container');
             const foundRecord = inspectionData.find(x => x.id === item.id || x.itemCode === item.id || (x.partcode && x.partcode === scannedBarcode) || (x.itemName && x.itemName === scannedBarcode));
-            
+
             const sups = [];
             if (foundRecord) {
                 if (foundRecord.supplement && foundRecord.supplement.needed) {
@@ -1288,7 +1438,7 @@
             const ticketId = item.id || scannedBarcode;
             const targetLoc = determineLocationByDept(item.fromDept || 'General Rework');
             activeLocation = targetLoc;
-            
+
             // Set in local statuses immediately
             updateRepairTicketStatus(ticketId, 'In Progress', {
                 location: targetLoc,
@@ -1303,7 +1453,7 @@
             const ticketId = item.id || scannedBarcode;
             const targetLoc = 'Inspection Department';
             activeLocation = targetLoc;
-            
+
             // Set in local statuses immediately
             updateRepairTicketStatus(ticketId, 'Waiting Accept', {
                 location: targetLoc,
@@ -1320,11 +1470,11 @@
                 alert('Item is already under repair.');
                 return;
             }
-            
+
             const item = getItemData(scannedBarcode);
             const ticketId = item.id || scannedBarcode;
             const startedAt = new Date().toISOString();
-            
+
             // Register active repair state
             underRepair[scannedBarcode] = {
                 ticketId: ticketId,
@@ -1336,7 +1486,7 @@
                 startTime: startedAt
             };
             localStorage.setItem('qms_under_repair', JSON.stringify(underRepair));
-            
+
             updateRepairTicketStatus(ticketId, 'In Progress', {
                 repairRunning: true,
                 repairSeconds: 0,
@@ -1344,7 +1494,7 @@
                 workers: 1,
                 location: activeLocation || 'Repair Station'
             });
-            
+
             alert('▶️ Repair process started!');
             showStep4SubView('repair');
         }
@@ -1356,7 +1506,7 @@
                 alert('No active repair process found.');
                 return;
             }
-            
+
             // Terminate timer and finalize
             confirmEndRepair();
         }
@@ -1364,11 +1514,11 @@
         function handleReceiveSupplement(requestCode) {
             const item = getItemData(scannedBarcode);
             const ticketId = item.id || scannedBarcode;
-            
+
             // Mark supplement as received in statuses
             const statuses = readRepairTicketStatuses();
             const ticketSaved = statuses[ticketId] || {};
-            
+
             if (ticketSaved.supplements && Array.isArray(ticketSaved.supplements)) {
                 ticketSaved.supplements.forEach(s => {
                     if (s.requestCode === requestCode) {
@@ -1379,14 +1529,14 @@
             if (ticketSaved.supplement && ticketSaved.supplement.requestCode === requestCode) {
                 ticketSaved.supplement.status = 'received';
             }
-            
+
             statuses[ticketId] = {
                 ...ticketSaved,
                 supplementReceived: true,
                 updatedAt: new Date().toISOString()
             };
             writeRepairTicketStatuses(statuses);
-            
+
             alert(`✔️ Supplement ${requestCode} marked as Received.`);
             showStep4SubView('supplement');
         }
@@ -1394,9 +1544,228 @@
 
 
         function showUnderRepairScreen(id) {
+            showActiveRepairScreen(id);
+        }
+
+        // Worker participants list for the current repair session
+        let workerParticipants = [];
+
+        const DEPT_RATES = {
+            'ASSEMBLY': 22.00, 'FINISHING': 24.00, 'MACHINERY': 26.00,
+            'UPHOLSTERY': 28.00, 'CARCASS': 25.00, 'COMPONENT': 20.00,
+            'SUBCON': 30.00, 'DEFAULT': 25.00
+        };
+
+        function startRepairAutomatically(queryVal) {
+            const item = getItemData(queryVal);
+            const ticketId = item.id || queryVal;
+            const startedAt = new Date().toISOString();
+
+            // Automatically determine location from ticket department
+            const rawTicket = inspectionData.find(t => t.id === queryVal);
+            const dept = rawTicket ? rawTicket.defectOwner : '';
+            const location = determineLocationByDept(dept);
+
+            let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
+            underRepair[queryVal] = {
+                ticketId: ticketId,
+                id: queryVal,
+                name: item.name || 'N/A',
+                defect: item.defect || 'N/A',
+                workers: [], // will be filled after participant selection
+                workersCount: 0,
+                location: location,
+                startTime: startedAt
+            };
+            localStorage.setItem('qms_under_repair', JSON.stringify(underRepair));
+
+            updateRepairTicketStatus(ticketId, 'In Progress', {
+                repairRunning: true,
+                repairSeconds: 0,
+                startedAt: startedAt,
+                workers: [],
+                workersCount: 0,
+                location: location
+            });
+
+            // Transition to the Worker Participant Input view
+            scannedBarcode = queryVal;
+            // Reset participant list
+            workerParticipants = [];
+            renderWorkerParticipantsList();
+
+            // Pre-select department based on ticket's defect owner dept
+            if (dept) {
+                const deptEl = document.getElementById('new-worker-dept');
+                if (deptEl) {
+                    const upperDept = dept.toUpperCase().trim();
+                    const match = Object.keys(DEPT_RATES).find(k => upperDept.includes(k));
+                    if (match) deptEl.value = match;
+                }
+            }
+
+            // Hide all other views
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`view-step${i}`).style.display = 'none';
+            }
+            document.getElementById('view-success').style.display = 'none';
+            document.getElementById('view-active-repair').style.display = 'none';
+            document.getElementById('view-completion-success').style.display = 'none';
+            document.getElementById('view-worker-input').style.display = 'block';
+        }
+
+        function addWorkerParticipant() {
+            const nameEl = document.getElementById('new-worker-name');
+            const deptEl = document.getElementById('new-worker-dept');
+            const name = (nameEl.value || '').trim();
+            const dept = deptEl.value || 'DEFAULT';
+
+            if (!name) {
+                nameEl.style.borderColor = 'var(--danger-color)';
+                nameEl.focus();
+                setTimeout(() => { nameEl.style.borderColor = ''; }, 1500);
+                return;
+            }
+
+            // Prevent duplicate names
+            if (workerParticipants.some(w => w.name.toLowerCase() === name.toLowerCase())) {
+                alert(`Worker "${name}" has already been added.`);
+                return;
+            }
+
+            workerParticipants.push({ name, department: dept });
+            nameEl.value = '';
+            nameEl.focus();
+            renderWorkerParticipantsList();
+        }
+
+        function removeWorkerParticipant(index) {
+            workerParticipants.splice(index, 1);
+            renderWorkerParticipantsList();
+        }
+
+        function renderWorkerParticipantsList() {
+            const listEl = document.getElementById('worker-participants-list');
+            const previewEl = document.getElementById('labour-cost-preview');
+            const previewDetailEl = document.getElementById('labour-cost-preview-detail');
+
+            if (workerParticipants.length === 0) {
+                listEl.innerHTML = `<div style="text-align:center; padding: 1rem; color: #9ca3af; font-size: 0.875rem; border: 1px dashed #d1d5db; border-radius: 8px;">No workers added yet. Add at least one participant above.</div>`;
+                previewEl.style.display = 'none';
+                return;
+            }
+
+            listEl.innerHTML = workerParticipants.map((w, i) => {
+                const rate = DEPT_RATES[w.department] || DEPT_RATES['DEFAULT'];
+                const deptLabel = {
+                    'ASSEMBLY': 'Assembly', 'FINISHING': 'Finishing', 'MACHINERY': 'Machinery',
+                    'UPHOLSTERY': 'Upholstery', 'CARCASS': 'Carcass', 'COMPONENT': 'Component',
+                    'SUBCON': 'Subcontract', 'DEFAULT': 'General'
+                }[w.department] || w.department;
+                return `
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.625rem 0.875rem; margin-bottom: 0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <span style="width: 28px; height: 28px; background: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem;">${i + 1}</span>
+                            <div>
+                                <div style="font-weight: 600; font-size: 0.9rem; color: #1f2937;">${w.name}</div>
+                                <div style="font-size: 0.75rem; color: #6b7280;">${deptLabel} &bull; $${rate.toFixed(2)}/hr</div>
+                            </div>
+                        </div>
+                        <button onclick="removeWorkerParticipant(${i})" style="background: #fee2e2; color: #ef4444; border: none; border-radius: 5px; padding: 4px 8px; font-size: 0.75rem; cursor: pointer; font-weight: 600;">✕ Remove</button>
+                    </div>
+                `;
+            }).join('');
+
+            // Labour cost preview — shows estimated cost (using a sample 1-hour basis as preview)
+            const totalRate = workerParticipants.reduce((sum, w) => sum + (DEPT_RATES[w.department] || DEPT_RATES['DEFAULT']), 0);
+            let lines = workerParticipants.map(w => {
+                const rate = DEPT_RATES[w.department] || DEPT_RATES['DEFAULT'];
+                return `<span style="color:#4b5563;">${w.name}</span>: $${rate.toFixed(2)}/hr`;
+            }).join(' &nbsp;+&nbsp; ');
+            previewDetailEl.innerHTML = `${lines}<br><strong>Combined rate: $${totalRate.toFixed(2)}/hr</strong>`;
+            previewEl.style.display = 'block';
+        }
+
+        function submitWorkerParticipants() {
+            if (workerParticipants.length === 0) {
+                // Auto-add a default worker if none provided
+                const rawTicket = inspectionData.find(t => t.id === scannedBarcode);
+                const dept = rawTicket && rawTicket.defectOwner ? rawTicket.defectOwner.toUpperCase().trim() : 'DEFAULT';
+                const normalizedDept = Object.keys(DEPT_RATES).find(k => dept.includes(k)) || 'DEFAULT';
+                workerParticipants = [{ name: localStorage.getItem('username') || 'Worker', department: normalizedDept }];
+            }
+
+            let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
+            if (underRepair[scannedBarcode]) {
+                underRepair[scannedBarcode].workers = workerParticipants;
+                underRepair[scannedBarcode].workersCount = workerParticipants.length;
+                localStorage.setItem('qms_under_repair', JSON.stringify(underRepair));
+
+                const item = getItemData(scannedBarcode);
+                const ticketId = item.id || scannedBarcode;
+
+                updateRepairTicketStatus(ticketId, 'In Progress', {
+                    workers: workerParticipants,
+                    workersCount: workerParticipants.length
+                });
+            }
+
+            // Proceed to the Active Repair timer screen
+            showActiveRepairScreen(scannedBarcode);
+        }
+
+        function showActiveRepairScreen(id) {
+            // Hide all other views
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`view-step${i}`).style.display = 'none';
+            }
+            if (document.getElementById('view-worker-input')) {
+                document.getElementById('view-worker-input').style.display = 'none';
+            }
+            if (document.getElementById('view-worker-time')) {
+                document.getElementById('view-worker-time').style.display = 'none';
+            }
+            document.getElementById('view-success').style.display = 'none';
+            document.getElementById('view-completion-success').style.display = 'none';
+
+            let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
+            const repairData = underRepair[id];
+            if (!repairData) return;
+
             scannedBarcode = id;
-            goToStep(4);
-            showStep4SubView('repair');
+            document.getElementById('active-id').textContent = id;
+            document.getElementById('active-name').textContent = repairData.name || 'N/A';
+            document.getElementById('active-defect').textContent = repairData.defect || 'N/A';
+            // Display workers: handle both array (new) and number (legacy) format
+            const workersVal = repairData.workers;
+            if (Array.isArray(workersVal) && workersVal.length > 0) {
+                document.getElementById('active-workers').textContent = workersVal.map(w => w.name).join(', ');
+            } else if (typeof workersVal === 'number') {
+                document.getElementById('active-workers').textContent = workersVal + ' worker(s)';
+            } else {
+                document.getElementById('active-workers').textContent = '—';
+            }
+            document.getElementById('active-location').textContent = repairData.location || 'Repair Station';
+
+            const start = new Date(repairData.startTime);
+            document.getElementById('active-start-time').textContent = start.toLocaleTimeString();
+
+            // Set up elapsed timer
+            if (elapsedTimerInterval) clearInterval(elapsedTimerInterval);
+            function updateActiveTimer() {
+                const now = new Date();
+                const diffMs = now - start;
+                const diffSecs = Math.max(0, Math.floor(diffMs / 1000));
+                const hours = Math.floor(diffSecs / 3600);
+                const minutes = Math.floor((diffSecs % 3600) / 60);
+                const seconds = diffSecs % 60;
+                const pad = (num) => String(num).padStart(2, '0');
+                document.getElementById('active-elapsed').textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+            }
+            updateActiveTimer();
+            elapsedTimerInterval = setInterval(updateActiveTimer, 1000);
+
+            document.getElementById('view-active-repair').style.display = 'block';
         }
 
         function confirmEndRepair() {
@@ -1405,49 +1774,182 @@
                 elapsedTimerInterval = null;
             }
 
-            // Retrieve repair data before deleting it
+            // Retrieve repair data
+            let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
+            const repairData = underRepair[scannedBarcode];
+
+            // Calculate total elapsed seconds
+            let totalElapsedSecs = 0;
+            if (repairData && repairData.startTime) {
+                const start = new Date(repairData.startTime);
+                const end = new Date();
+                totalElapsedSecs = Math.max(0, Math.floor((end - start) / 1000));
+            }
+
+            // Store end time for later use by finalizeRepair()
+            if (repairData) {
+                repairData._endTime = new Date().toISOString();
+                repairData._totalElapsedSecs = totalElapsedSecs;
+                underRepair[scannedBarcode] = repairData;
+                localStorage.setItem('qms_under_repair', JSON.stringify(underRepair));
+            }
+
+            // Show worker time log screen
+            const totalHrs = Math.floor(totalElapsedSecs / 3600);
+            const totalMins = Math.floor((totalElapsedSecs % 3600) / 60);
+            document.getElementById('wt-total-elapsed').textContent =
+                `${String(totalHrs).padStart(2, '0')}h ${String(totalMins).padStart(2, '0')}m`;
+
+            // Build per-worker rows
+            const participants = Array.isArray(repairData && repairData.workers)
+                ? repairData.workers
+                : [];
+
+            const defaultHH = String(totalHrs).padStart(2, '0');
+            const defaultMM = String(totalMins).padStart(2, '0');
+
+            const deptLabels = {
+                'ASSEMBLY': 'Assembly', 'FINISHING': 'Finishing', 'MACHINERY': 'Machinery',
+                'UPHOLSTERY': 'Upholstery', 'CARCASS': 'Carcass', 'COMPONENT': 'Component',
+                'SUBCON': 'Subcontract', 'DEFAULT': 'General'
+            };
+
+            const rowsEl = document.getElementById('worker-time-rows');
+            if (participants.length === 0) {
+                // Fallback: current user as a single worker
+                const username = localStorage.getItem('username') || 'Worker';
+                const rawTicket = inspectionData.find(t => t.id === scannedBarcode);
+                const dept = rawTicket && rawTicket.defectOwner ? rawTicket.defectOwner.toUpperCase().trim() : 'DEFAULT';
+                const normalizedDept = Object.keys(DEPT_RATES).find(k => dept.includes(k)) || 'DEFAULT';
+                participants.push({ name: username, department: normalizedDept });
+            }
+
+            rowsEl.innerHTML = participants.map((w, i) => {
+                const rate = DEPT_RATES[w.department] || DEPT_RATES['DEFAULT'];
+                const deptLabel = deptLabels[w.department] || w.department;
+                return `
+                    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.875rem 1rem; margin-bottom: 0.625rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                            <span style="width: 26px; height: 26px; background: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem; flex-shrink: 0;">${i + 1}</span>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 0.9rem; color: #1f2937;">${w.name}</div>
+                                <div style="font-size: 0.75rem; color: #6b7280;">${deptLabel} &bull; $${rate.toFixed(2)}/hr</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <label style="font-size: 11px; font-weight: 600; color: #6b7280; white-space: nowrap;">Time Worked:</label>
+                            <input type="number" id="wt-hh-${i}" min="0" max="99" value="${defaultHH}" placeholder="HH"
+                                style="width: 58px; padding: 0.4rem 0.5rem; border: 1px solid #d1d5db; border-radius: 5px; font-size: 0.9rem; font-family: monospace; text-align: center;"
+                                oninput="updateWorkerTimeCostPreview()"> h
+                            <input type="number" id="wt-mm-${i}" min="0" max="59" value="${defaultMM}" placeholder="MM"
+                                style="width: 58px; padding: 0.4rem 0.5rem; border: 1px solid #d1d5db; border-radius: 5px; font-size: 0.9rem; font-family: monospace; text-align: center;"
+                                oninput="updateWorkerTimeCostPreview()"> m
+                            <span id="wt-cost-${i}" style="margin-left: auto; font-weight: 700; color: #1d4ed8; font-size: 0.9rem;"></span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Store participants for finalizeRepair to reference
+            window._wtParticipants = participants;
+
+            updateWorkerTimeCostPreview();
+
+            // Show the worker time screen
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`view-step${i}`).style.display = 'none';
+            }
+            document.getElementById('stepperContainer').style.display = 'none';
+            document.getElementById('view-active-repair').style.display = 'none';
+            document.getElementById('view-worker-time').style.display = 'block';
+        }
+
+        function updateWorkerTimeCostPreview() {
+            const participants = window._wtParticipants || [];
+            let totalCost = 0;
+            let lines = [];
+
+            participants.forEach((w, i) => {
+                const rate = DEPT_RATES[w.department] || DEPT_RATES['DEFAULT'];
+                const hh = parseInt(document.getElementById(`wt-hh-${i}`)?.value || '0') || 0;
+                const mm = parseInt(document.getElementById(`wt-mm-${i}`)?.value || '0') || 0;
+                const hoursWorked = hh + mm / 60;
+                const cost = hoursWorked * rate;
+                totalCost += cost;
+                lines.push(`<span style="color:#4b5563;">${w.name}</span>: ${hh}h ${mm}m × $${rate.toFixed(2)}/hr = <strong>$${cost.toFixed(2)}</strong>`);
+                const costEl = document.getElementById(`wt-cost-${i}`);
+                if (costEl) costEl.textContent = `$${cost.toFixed(2)}`;
+            });
+
+            document.getElementById('wt-cost-detail').innerHTML = lines.join('<br>');
+            document.getElementById('wt-cost-total').innerHTML = `Total Labour Cost: <span style="color:#1e40af;">$${totalCost.toFixed(2)}</span>`;
+        }
+
+        function finalizeRepair() {
+            const participants = window._wtParticipants || [];
+
+            // Read per-worker times
+            const workersWithTime = participants.map((w, i) => {
+                const rate = DEPT_RATES[w.department] || DEPT_RATES['DEFAULT'];
+                const hh = parseInt(document.getElementById(`wt-hh-${i}`)?.value || '0') || 0;
+                const mm = parseInt(document.getElementById(`wt-mm-${i}`)?.value || '0') || 0;
+                const hoursWorked = hh + mm / 60;
+                const workerSeconds = Math.round(hoursWorked * 3600);
+                const laborCost = Number((hoursWorked * rate).toFixed(2));
+                return {
+                    name: w.name,
+                    department: w.department,
+                    hoursWorked: Number(hoursWorked.toFixed(4)),
+                    workerSeconds,
+                    rate,
+                    laborCost
+                };
+            });
+
+            const totalLaborCost = Number(workersWithTime.reduce((s, w) => s + w.laborCost, 0).toFixed(2));
+            // Use the max worker seconds as the canonical repairSeconds (longest individual time)
+            const repairSeconds = workersWithTime.length > 0
+                ? Math.max(...workersWithTime.map(w => w.workerSeconds))
+                : 0;
+
+            // Retrieve repair data
             let underRepair = JSON.parse(localStorage.getItem('qms_under_repair') || '{}');
             const repairData = underRepair[scannedBarcode];
             const item = getItemData(scannedBarcode);
             const ticketId = repairData && repairData.ticketId ? repairData.ticketId : (item.id || scannedBarcode);
 
-            // Delete the repair process from the active list
+            const totalElapsedSecs = repairData ? (repairData._totalElapsedSecs || 0) : 0;
+            const endTime = repairData && repairData._endTime ? new Date(repairData._endTime) : new Date();
+
+            const hrs = Math.floor(totalElapsedSecs / 3600);
+            const mins = Math.floor((totalElapsedSecs % 3600) / 60);
+            const secs = totalElapsedSecs % 60;
+            const pad = n => String(n).padStart(2, '0');
+            const elapsedText = `${pad(hrs)}h ${pad(mins)}m ${pad(secs)}s`;
+
+            // Delete from active repairs
             delete underRepair[scannedBarcode];
             localStorage.setItem('qms_under_repair', JSON.stringify(underRepair));
 
-            // Calculate elapsed time text
-            let elapsedText = "Unknown";
-            if (repairData && repairData.startTime) {
-                const start = new Date(repairData.startTime);
-                const end = new Date();
-                const diffMs = end - start;
-                const diffSecs = Math.max(0, Math.floor(diffMs / 1000));
-                const hours = Math.floor(diffSecs / 3600);
-                const minutes = Math.floor((diffSecs % 3600) / 60);
-                const seconds = diffSecs % 60;
-                const pad = (num) => String(num).padStart(2, '0');
-                elapsedText = `${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
-                updateRepairTicketStatus(ticketId, 'Completed', {
-                    repairRunning: false,
-                    repairSeconds: diffSecs,
-                    completedAt: end.toISOString()
-                });
-            } else {
-                updateRepairTicketStatus(ticketId, 'Completed', {
-                    repairRunning: false,
-                    completedAt: new Date().toISOString()
-                });
-            }
+            // Save completed status with per-worker time data
+            updateRepairTicketStatus(ticketId, 'Completed', {
+                repairRunning: false,
+                repairSeconds: totalElapsedSecs,
+                completedAt: endTime.toISOString(),
+                workers: workersWithTime,
+                workersCount: workersWithTime.length,
+                totalLaborCost
+            });
 
-            // Set the success message
+            // Set success message
             document.getElementById('completion-success-msg').innerHTML = `
-                The repair process for item <strong>${scannedBarcode}</strong> has been marked as done.<br>
-                Total duration: <strong>${elapsedText}</strong>.
+                Repair for <strong>${scannedBarcode}</strong> is complete.<br>
+                Total elapsed: <strong>${elapsedText}</strong><br>
+                Workers: <strong>${workersWithTime.map(w => w.name).join(', ')}</strong><br>
+                Total Labour Cost: <strong style="color: var(--primary-color);">$${totalLaborCost.toFixed(2)}</strong>
             `;
 
-            // Hide active screen, show completion success screen
-            document.getElementById('view-active-repair').style.display = 'none';
-            document.getElementById('view-step4').style.display = 'none';
+            document.getElementById('view-worker-time').style.display = 'none';
             document.getElementById('view-completion-success').style.display = 'block';
         }
 
@@ -1456,7 +1958,9 @@
             selectedInputMode = 'manual';
             scannedBarcode = '';
             workerCount = 1;
+            workerParticipants = [];
             activeLocation = '';
+            window._wtParticipants = [];
 
             document.getElementById('partcode-input').value = inspectionData.length > 0 ? (inspectionData[0].partcode || inspectionData[0].itemName || inspectionData[0].id) : '01829265-WP';
             const workerEl = document.getElementById('worker-count');
@@ -1589,8 +2093,8 @@
 
             if (!m) {
                 // Fallback: look in localStorage statuses
-                const statuses = typeof readRepairTicketStatuses === 'function' 
-                    ? readRepairTicketStatuses() 
+                const statuses = typeof readRepairTicketStatuses === 'function'
+                    ? readRepairTicketStatuses()
                     : {};
                 for (const key in statuses) {
                     const entry = statuses[key];

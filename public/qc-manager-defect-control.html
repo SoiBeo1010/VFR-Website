@@ -1645,7 +1645,10 @@
                 masterSku: saved.masterSku || null,
                 reportId: saved.reportId || null,
                 supplement: saved.supplement || null,
-                supplements: saved.supplements || null
+                supplements: saved.supplements || null,
+                workers: saved.workers !== undefined ? saved.workers : 1,
+                workersCount: saved.workersCount || (Array.isArray(saved.workers) ? saved.workers.length : (saved.workers || 1)),
+                totalLaborCost: typeof saved.totalLaborCost === 'number' ? saved.totalLaborCost : undefined
             };
         }
 
@@ -1879,6 +1882,9 @@
                     status: storedStatus.status,
                     repairSeconds: storedStatus.repairSeconds,
                     repairRunning: storedStatus.repairRunning,
+                    workers: storedStatus.workers !== undefined ? storedStatus.workers : 1,
+                    workersCount: storedStatus.workersCount || (Array.isArray(storedStatus.workers) ? storedStatus.workers.length : (storedStatus.workers || 1)),
+                    totalLaborCost: storedStatus.totalLaborCost,
                     updatedAt: storedStatus.updatedAt,
                     startedAt: storedStatus.startedAt,
                     completedAt: storedStatus.completedAt,
@@ -2010,6 +2016,10 @@
                         tState.isLegacyQuarantined = storedStatus.isLegacyQuarantined !== null ? storedStatus.isLegacyQuarantined : tState.isLegacyQuarantined;
                         tState.masterSku = storedStatus.masterSku || tState.masterSku;
                         tState.reportId = storedStatus.reportId || tState.reportId;
+                        // Sync worker and labour cost fields
+                        if (storedStatus.workers !== undefined) tState.workers = storedStatus.workers;
+                        if (storedStatus.workersCount !== undefined) tState.workersCount = storedStatus.workersCount;
+                        if (storedStatus.totalLaborCost !== undefined) tState.totalLaborCost = storedStatus.totalLaborCost;
                         if (storedStatus.supplements) {
                             ticket.supplements = storedStatus.supplements;
                             tState.supplements = storedStatus.supplements;
@@ -2801,7 +2811,40 @@
                     });
                     const repairSecs = t.repairSeconds || 0;
                     const rate = getLaborRateByDepartment(t.meta.defectOwner);
-                    const laborCost = Number(((repairSecs / 3600) * rate).toFixed(2));
+                    // Support three data formats (newest first):
+                    // 1. Per-worker workerSeconds: each worker has their own recorded hours
+                    // 2. Workers array with dept only: shared repairSecs × sum(dept rates)
+                    // 3. Legacy: workers is a count number × dept rate
+                    let laborCost;
+                    if (typeof t.totalLaborCost === 'number' && t.totalLaborCost > 0) {
+                        // Most accurate: pre-calculated from individual worker time inputs
+                        laborCost = t.totalLaborCost;
+                    } else if (Array.isArray(t.workers) && t.workers.length > 0) {
+                        if (typeof t.workers[0].workerSeconds === 'number') {
+                            // Each worker has their own time recorded
+                            laborCost = Number(t.workers.reduce((sum, w) => {
+                                const wDept = (w.department || '').toUpperCase().trim();
+                                const wRate = DEPARTMENT_LABOR_RATES[wDept] !== undefined
+                                    ? DEPARTMENT_LABOR_RATES[wDept]
+                                    : getLaborRateByDepartment(w.department);
+                                return sum + (w.workerSeconds / 3600) * wRate;
+                            }, 0).toFixed(2));
+                        } else {
+                            // Workers listed with dept only — use shared repair time × sum of rates
+                            const totalRate = t.workers.reduce((sum, w) => {
+                                const wDept = (w.department || '').toUpperCase().trim();
+                                const wRate = DEPARTMENT_LABOR_RATES[wDept] !== undefined
+                                    ? DEPARTMENT_LABOR_RATES[wDept]
+                                    : getLaborRateByDepartment(w.department);
+                                return sum + wRate;
+                            }, 0);
+                            laborCost = Number(((repairSecs / 3600) * totalRate).toFixed(2));
+                        }
+                    } else {
+                        // Legacy format: workers is a count multiplier
+                        const workersCount = (typeof t.workers === 'number' && t.workers > 0) ? t.workers : 1;
+                        laborCost = Number(((repairSecs / 3600) * rate * workersCount).toFixed(2));
+                    }
                     return {
                         id: t.reportId || t.masterSku || t.id || 'N/A',
                         itemCode: t.meta.itemCode || 'N/A',
@@ -2812,7 +2855,9 @@
                         laborCost,
                         materialCost,
                         totalCost: laborCost + materialCost,
-                        repairSeconds: repairSecs
+                        repairSeconds: repairSecs,
+                        workers: Array.isArray(t.workers) ? t.workers : [],
+                        workersCount: t.workersCount || (Array.isArray(t.workers) ? t.workers.length : (t.workers || 1))
                     };
                 }),
                 ...staticHistory.map(h => {
@@ -2958,6 +3003,7 @@
                                     <th>Description / Part</th>
                                     <th>Defect Case</th>
                                     <th>Owner</th>
+                                    <th>Workers</th>
                                     <th>Completed Date</th>
                                     <th>Duration</th>
                                     <th>Material Cost</th>
@@ -2967,7 +3013,7 @@
                             </thead>
                             <tbody id="analyticsCostBreakdownBody">
                                 <tr>
-                                    <td colspan="10" style="text-align:center; padding:30px; color:var(--txt-dim); font-weight: 500;">No records found for selected filters.</td>
+                                    <td colspan="11" style="text-align:center; padding:30px; color:var(--txt-dim); font-weight: 500;">No records found for selected filters.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -3155,7 +3201,7 @@
                 if (data.length === 0) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="10" style="text-align:center; padding:30px; color:var(--txt-dim); font-weight:500;">No records found for selected filters.</td>
+                            <td colspan="11" style="text-align:center; padding:30px; color:var(--txt-dim); font-weight:500;">No records found for selected filters.</td>
                         </tr>
                     `;
                 } else {
@@ -3173,6 +3219,16 @@
                             } catch (e) {}
                         }
                         const durationStr = formatTime(item.repairSeconds);
+                        // Render worker list
+                        let workersDisplay = '—';
+                        if (Array.isArray(item.workers) && item.workers.length > 0) {
+                            workersDisplay = item.workers.map(w => {
+                                const deptShort = { 'ASSEMBLY': 'Assy', 'FINISHING': 'Fin', 'MACHINERY': 'Mach', 'UPHOLSTERY': 'Uph', 'CARCASS': 'Car', 'COMPONENT': 'Comp', 'SUBCON': 'Sub', 'DEFAULT': 'Gen' }[w.department] || w.department;
+                                return `<span style="display:inline-block; background:#f3f4f6; border-radius:4px; padding:1px 5px; font-size:11px; margin:1px;">${w.name}<span style="color:#6b7280; font-size:10px;"> (${deptShort})</span></span>`;
+                            }).join(' ');
+                        } else if (typeof item.workersCount === 'number') {
+                            workersDisplay = item.workersCount + (item.workersCount === 1 ? ' worker' : ' workers');
+                        }
                         return `
                             <tr>
                                 <td class="mono" style="font-weight: 600; color: var(--amber);">${item.id}</td>
@@ -3180,6 +3236,7 @@
                                 <td>${item.part}</td>
                                 <td>${item.defectCode}</td>
                                 <td>${item.defectOwner}</td>
+                                <td style="max-width:160px;">${workersDisplay}</td>
                                 <td>${completedDate}</td>
                                 <td>${durationStr}</td>
                                 <td style="font-weight: 600;">$${item.materialCost.toFixed(2)}</td>
