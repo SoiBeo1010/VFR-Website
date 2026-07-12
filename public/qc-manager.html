@@ -2494,18 +2494,19 @@
             `;
             document.body.appendChild(modal);
 
-            let m = null;
-            let items = [];
             try {
-                const res = await fetch(`/api/supplement-requests/${requestCode}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    m = data.master || {};
-                    items = data.items || [];
+                let m = null;
+                let items = [];
+                try {
+                    const res = await fetch(`/api/supplement-requests/${requestCode}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        m = data.master || {};
+                        items = data.items || [];
+                    }
+                } catch (err) {
+                    console.warn('API fetch failed, falling back to local storage:', err);
                 }
-            } catch (err) {
-                console.warn('API fetch failed, falling back to local storage:', err);
-            }
 
             if (!m) {
                 // Fallback: look in localStorage statuses
