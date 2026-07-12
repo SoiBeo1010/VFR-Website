@@ -726,14 +726,18 @@
                     <span class="sidebar-icon">🕒</span>
                     <span>Repair History</span>
                 </a></li>
+            <li><a href="#" class="sidebar-link" onclick="switchDefectView('analytics', this)">
+                    <span class="sidebar-icon">📊</span>
+                    <span>Defect Analytics</span>
+                </a></li>
+            <li><a href="#" class="sidebar-link" onclick="switchDefectView('dashboard', this)">
+                    <span class="sidebar-icon">🏠</span>
+                    <span>Dashboard</span>
+                </a></li>
             <li><a href="#" class="sidebar-link" onclick="switchDefectView('notif', this)">
                     <span class="sidebar-icon">🔔</span>
                     <span>Notifications</span>
                     <span class="inline-badge" id="outerNotifBadge" style="margin-left: auto; background: #137333; color: white; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">2</span>
-                </a></li>
-            <li><a href="#" class="sidebar-link" onclick="switchDefectView('dashboard', this)">
-                    <span class="sidebar-icon">📊</span>
-                    <span>Dashboard</span>
                 </a></li>
             <li><a href="#" class="sidebar-link" onclick="switchDefectView('profile', this)">
                     <span class="sidebar-icon">👤</span>
@@ -935,7 +939,7 @@
                 <span style="font-size: 16px; margin-right: 4px;">&larr;</span> Back
             </button>
             <div style="background: transparent; overflow: hidden; height: calc(100vh - 130px);">
-                <iframe id="defect-control-iframe" src="/defect-control.html?v=2" style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                <iframe id="defect-control-iframe" src="/qc-manager-defect-control.html" style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
             </div>
         </div>
 
@@ -1315,6 +1319,10 @@
             const iframe = document.getElementById('defect-control-iframe');
             if (iframe && iframe.contentWindow && typeof iframe.contentWindow.go === 'function') {
                 iframe.contentWindow.go(view);
+                // Trigger chart render after a short delay for analytics view
+                if (view === 'analytics' && typeof iframe.contentWindow.refreshAnalyticsCharts === 'function') {
+                    setTimeout(() => iframe.contentWindow.refreshAnalyticsCharts(), 80);
+                }
             }
         }
 
@@ -1326,9 +1334,15 @@
 
         function updateOuterDefectBadges(ticketCount, notifCount) {
             const ticketBadge = document.getElementById('outerTicketBadge');
-            if (ticketBadge) ticketBadge.textContent = ticketCount;
+            if (ticketBadge) {
+                ticketBadge.textContent = ticketCount;
+                ticketBadge.style.display = ticketCount > 0 ? 'inline-block' : 'none';
+            }
             const notifBadge = document.getElementById('outerNotifBadge');
-            if (notifBadge) notifBadge.textContent = notifCount;
+            if (notifBadge) {
+                notifBadge.textContent = notifCount;
+                notifBadge.style.display = notifCount > 0 ? 'inline-block' : 'none';
+            }
         }
 
         function toggleNotificationPanel() {

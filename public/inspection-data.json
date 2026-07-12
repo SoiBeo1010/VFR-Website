@@ -14751,7 +14751,7 @@
     "check_pass_hours": "",
     "status": "Fail",
     "repair_status": "WAITING_MATERIAL",
-    "repair_status_updated_at": "2026-07-12T05:42:58.133972",
+    "repair_status_updated_at": "2026-07-12T07:37:31.867762",
     "supplement_request_code": "SRC-202607-0017",
     "supplement": {
       "needed": true,
@@ -14792,7 +14792,7 @@
     "check_pass_hours": "",
     "status": "Fail",
     "repair_status": "WAITING_MATERIAL",
-    "repair_status_updated_at": "2026-07-12T05:42:58.134942",
+    "repair_status_updated_at": "2026-07-12T07:37:31.868930",
     "supplement_request_code": "SRC-202607-0010",
     "supplement": {
       "needed": true,
@@ -14833,7 +14833,7 @@
     "check_pass_hours": "",
     "status": "Fail",
     "repair_status": "IN_REPAIR",
-    "repair_status_updated_at": "2026-07-12T05:42:58.135576",
+    "repair_status_updated_at": "2026-07-12T07:37:31.869593",
     "supplement_request_code": "SRC-202606-0071",
     "supplement": {
       "needed": true,

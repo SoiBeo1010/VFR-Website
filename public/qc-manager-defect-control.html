@@ -9,6 +9,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
         rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -231,6 +232,25 @@
             flex-direction: column;
             padding: 20px 18px 16px;
             z-index: 10;
+            transition: width 0.2s, opacity 0.2s;
+        }
+
+        /* ── Iframe-embedded mode: strip inner chrome ── */
+        body.in-iframe .sidebar {
+            display: none !important;
+        }
+
+        body.in-iframe .main {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+
+        body.in-iframe .topbar {
+            display: none !important;
+        }
+
+        body.in-iframe .content {
+            padding-top: 16px;
         }
 
         .sb-brand {
@@ -1320,6 +1340,9 @@
                 <div class="sb-item" data-view="history" onclick="go('history')">
                     <span class="ic">&#128337;</span> Repair History
                 </div>
+                <div class="sb-item" data-view="analytics" onclick="go('analytics')">
+                    <span class="ic">&#128202;</span> Defect Analytics
+                </div>
                 <div class="sb-item" data-view="notif" onclick="go('notif')">
                     <span class="ic">&#128276;</span> Notifications
                     <span class="bd" id="navNotifBadge">0</span>
@@ -1474,6 +1497,7 @@
             detail: { crumb: "My Repair Tickets", title: "Repair Ticket Detail" },
             working: { crumb: "Repair Ticket", title: "Repair Working" },
             history: { crumb: "Records", title: "Repair History" },
+            analytics: { crumb: "Reports", title: "Defect Analytics" },
             notif: { crumb: "Inbox", title: "Notifications" },
             profile: { crumb: "Account", title: "Profile" }
         };
@@ -1596,7 +1620,8 @@
                     isLegacyQuarantined: null,
                     masterSku: null,
                     reportId: null,
-                    supplement: null
+                    supplement: null,
+                    supplements: null
                 };
             }
 
@@ -1623,7 +1648,8 @@
                 isLegacyQuarantined: saved.isLegacyQuarantined !== undefined ? saved.isLegacyQuarantined : null,
                 masterSku: saved.masterSku || null,
                 reportId: saved.reportId || null,
-                supplement: saved.supplement || null
+                supplement: saved.supplement || null,
+                supplements: saved.supplements || null
             };
         }
 
@@ -1875,10 +1901,17 @@
                     result: ""
                 };
 
-                if (storedStatus.supplement) {
+                if (storedStatus.supplements) {
+                    ticket.supplements = storedStatus.supplements;
+                    ticketsState[ticket.id].supplements = storedStatus.supplements;
+                    if (storedStatus.supplements.length > 0) {
+                        ticket.supplement = storedStatus.supplements[storedStatus.supplements.length - 1];
+                        ticketsState[ticket.id].supplement = storedStatus.supplements[storedStatus.supplements.length - 1];
+                    }
+                } else if (storedStatus.supplement) {
                     // Migrate legacy supplement requests that don't have a requestCode
                     if (!storedStatus.supplement.requestCode) {
-                        storedStatus.supplement.requestCode = ticket.supplement_request_code || `SRC-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,'0')}-${String(Math.floor(1000 + Math.random()*9000))}`;
+                        storedStatus.supplement.requestCode = ticket.supplement_request_code || `SRC-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Math.floor(1000 + Math.random() * 9000))}`;
                         const statuses = readStoredRepairTicketStatuses();
                         if (statuses[ticket.id]) {
                             statuses[ticket.id].supplement = storedStatus.supplement;
@@ -1887,6 +1920,8 @@
                     }
                     ticket.supplement = storedStatus.supplement;
                     ticketsState[ticket.id].supplement = storedStatus.supplement;
+                    ticket.supplements = [storedStatus.supplement];
+                    ticketsState[ticket.id].supplements = [storedStatus.supplement];
                 }
 
                 // Auto-sync back to stored status if not saved or needs migration
@@ -1905,8 +1940,16 @@
             if (navBadge) navBadge.textContent = count;
 
             const notifs = readNotifications();
+            const unreadCount = notifs.filter(n => !n.read).length;
             const navNotifBadge = document.getElementById('navNotifBadge');
-            if (navNotifBadge) navNotifBadge.textContent = notifs.length;
+            if (navNotifBadge) navNotifBadge.textContent = unreadCount;
+
+            // Push counts to outer qc-manager.html sidebar when embedded in iframe
+            try {
+                if (window.self !== window.top && typeof window.parent.updateOuterDefectBadges === 'function') {
+                    window.parent.updateOuterDefectBadges(count, unreadCount);
+                }
+            } catch (e) { /* cross-origin guard */ }
         }
 
         /* ================= AUTH FLOW REMOVED ================= */
@@ -1971,9 +2014,18 @@
                         tState.isLegacyQuarantined = storedStatus.isLegacyQuarantined !== null ? storedStatus.isLegacyQuarantined : tState.isLegacyQuarantined;
                         tState.masterSku = storedStatus.masterSku || tState.masterSku;
                         tState.reportId = storedStatus.reportId || tState.reportId;
-                        if (storedStatus.supplement) {
+                        if (storedStatus.supplements) {
+                            ticket.supplements = storedStatus.supplements;
+                            tState.supplements = storedStatus.supplements;
+                            if (storedStatus.supplements.length > 0) {
+                                ticket.supplement = storedStatus.supplements[storedStatus.supplements.length - 1];
+                                tState.supplement = storedStatus.supplements[storedStatus.supplements.length - 1];
+                            }
+                        } else if (storedStatus.supplement) {
                             ticket.supplement = storedStatus.supplement;
                             tState.supplement = storedStatus.supplement;
+                            ticket.supplements = [storedStatus.supplement];
+                            tState.supplements = [storedStatus.supplement];
                         }
                     }
                 });
@@ -1997,6 +2049,7 @@
             else if (view === 'detail') container.innerHTML = renderDetail(currentTicketId);
             else if (view === 'working') container.innerHTML = renderWorking(currentTicketId);
             else if (view === 'history') container.innerHTML = renderHistory();
+            else if (view === 'analytics') { container.innerHTML = renderAnalytics(); setTimeout(refreshAnalyticsCharts, 50); }
             else if (view === 'notif') container.innerHTML = renderNotif();
             else if (view === 'profile') container.innerHTML = renderProfile();
 
@@ -2335,7 +2388,7 @@
                 <div class="idline">Ticket: ${ticket.reportId || ticket.masterSku || 'N/A'} <span class="status-chip ${statusClass(ticket.status)}">${ticket.status}</span></div>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
                     <button class="btn-sm btn-ghost" onclick="openQuarantine('${t.id}')">&#128196; View Quarantine Report</button>
-                    <button class="btn-sm btn-ghost" style="border-color: var(--amber); color: var(--amber); font-weight: bold;" onclick="openSupplementForm('${t.id}')">+ Create Supplement Request</button>
+                    ${ticket.status !== 'Completed' ? `<button class="btn-sm btn-ghost" style="border-color: var(--amber); color: var(--amber); font-weight: bold;" onclick="openSupplementForm('${t.id}')">+ Create Supplement Request</button>` : ''}
                     ${actionButtons}
                 </div>
             </div>
@@ -2421,26 +2474,61 @@
                     <div class="panel">
                         <div class="panel-body">
                             <div class="sect-title">Supplement Part Status</div>
-                            ${t.supplement && t.supplement.needed ? `
-                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-                                    <div style="width:10px; height:10px; border-radius:50%; background:${t.supplement.status === 'waiting' ? '#f59e0b' : 'var(--good)'};"></div>
-                                    <span style="font-size:13px; font-weight:700; color:${t.supplement.status === 'waiting' ? '#d97706' : 'var(--good)'};">
-                                        ${t.supplement.status === 'waiting' ? 'Awaiting stock' : 'Stock arrived'}
-                                    </span>
-                                </div>
-                                <div class="field-grid" style="grid-template-columns: 1fr; gap:6px;">
-                                    <div><div class="fk">Supplement Part</div><div class="fv" style="font-size:13px;">${t.supplement.partName}</div></div>
-                                    <div><div class="fk">Qty Requested</div><div class="fv">${t.supplement.qty} pcs</div></div>
-                                    <div><div class="fk">${t.supplement.status === 'waiting' ? 'ETA' : 'Storage Bin'}</div><div class="fv mono" style="font-size:13px;">${t.supplement.status === 'waiting' ? (t.supplement.eta || 'Pending') : (t.supplement.location || 'Bin B-12')}</div></div>
-                                </div>
-                                <div style="margin-top: 10px;">
-                                    <button class="btn-sm btn-ghost" style="border-color: var(--amber); color: var(--amber); font-weight: bold; width: 100%;" onclick="viewSupplementRequestDetail('${t.supplement.requestCode || t.supplement_request_code || ''}')">
-                                        👁️ View Detail
-                                    </button>
-                                </div>
-                            ` : `
-                                <div style="font-size:13px; color:var(--txt-dim);">No supplementary material parts needed for this repair task.</div>
-                            `}
+                            ${(() => {
+                    // Read fresh from ticketsState to always show the latest data
+                    const ts = ticketsState[t.id] || ticket;
+                    const sups = [];
+                    const allSups = ts.supplements || t.supplements || [];
+                    const latestSup = ts.supplement || t.supplement;
+                    allSups.forEach(s => {
+                        if (!sups.some(e => e.requestCode === s.requestCode)) sups.push(s);
+                    });
+                    if (latestSup && latestSup.needed && !sups.some(e => e.requestCode === latestSup.requestCode)) {
+                        sups.push(latestSup);
+                    }
+                    if (sups.length === 0) {
+                        return `<div style="font-size:13px; color:var(--txt-dim);">No supplementary material parts needed for this repair task.</div>`;
+                    }
+                    const isCompleted = ticket.status === 'Completed';
+                    const grandTotal = sups.reduce((acc, s) => acc + (s.totalCost || 0), 0);
+                    const cards = sups.map((s, idx) => {
+                        const isApproved = s.status === 'approved' || isCompleted;
+                        return `
+                                        <div style="border-bottom: ${idx < sups.length - 1 ? '1px solid var(--panel-line-soft)' : 'none'}; padding-bottom: ${idx < sups.length - 1 ? '12px' : '0'}; margin-bottom: ${idx < sups.length - 1 ? '12px' : '0'};">
+                                            <div style="font-size:12px; font-weight:700; color:var(--txt-dim); margin-bottom:6px; display:flex; justify-content:space-between;">
+                                                <span>Request #${idx + 1}</span>
+                                                <span class="mono">${s.requestCode || ''}</span>
+                                            </div>
+                                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                                                <div style="width:8px; height:8px; border-radius:50%; background:${s.status === 'waiting' && !isCompleted ? '#f59e0b' : 'var(--good)'};"></div>
+                                                <span style="font-size:12px; font-weight:700; color:${s.status === 'waiting' && !isCompleted ? '#d97706' : 'var(--good)'};">
+                                                    ${isCompleted ? 'Approved' : (s.status === 'waiting' ? 'Awaiting stock' : 'Approved')}
+                                                </span>
+                                            </div>
+                                            <div class="field-grid" style="grid-template-columns: 1fr; gap:4px; font-size:12px;">
+                                                <div><div class="fk" style="font-size:10px;">Supplement Part</div><div class="fv" style="font-size:12px;">${s.partName}</div></div>
+                                                <div><div class="fk" style="font-size:10px;">Qty Requested</div><div class="fv" style="font-size:12px;">${s.qty} pcs</div></div>
+                                                <div><div class="fk" style="font-size:10px;">${!isCompleted && s.status === 'waiting' ? 'ETA' : 'Storage Bin'}</div><div class="fv mono" style="font-size:12px;">${!isCompleted && s.status === 'waiting' ? (s.eta || 'Pending') : (s.location || 'Bin B-12')}</div></div>
+                                                ${isApproved ? `
+                                                <div><div class="fk" style="font-size:10px;">Repair Material Cost</div><div class="fv font-semibold" style="color: var(--good); font-weight: 700; font-size: 13px;">$${(s.totalCost || 0).toFixed(2)}</div></div>
+                                                ` : ''}
+                                            </div>
+                                            <div style="margin-top: 8px;">
+                                                <button class="btn-sm btn-ghost" style="border-color: var(--amber); color: var(--amber); font-weight: bold; width: 100%; font-size:11px; padding: 4px 8px;" onclick="viewSupplementRequestDetail('${s.requestCode || ''}')">
+                                                    👁️ View Detail
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `;
+                    }).join('');
+                    const totalRow = isCompleted && sups.length > 1 ? `
+                                    <div style="margin-top:12px; padding-top:10px; border-top:2px solid var(--good); display:flex; justify-content:space-between; align-items:center;">
+                                        <span style="font-size:12px; font-weight:700; color:var(--txt-dim);">Total Supplement Cost</span>
+                                        <span style="font-size:15px; font-weight:800; color:var(--good);">$${grandTotal.toFixed(2)}</span>
+                                    </div>
+                                ` : '';
+                    return cards + totalRow;
+                })()}
                         </div>
                     </div>
                 </div>
@@ -2656,6 +2744,343 @@
             }
         }
 
+        /* ================= ANALYTICS VIEW ================= */
+        const LABOR_RATE_PER_HOUR = 25.0; // $25/hour labor rate
+
+        // Chart.js instances (destroyed & recreated on each render)
+        let analyticsCharts = { pareto: null, owners: null, defectCost: null, trend: null };
+
+        // Analytics filter state
+        let analyticsFromDate = '';
+        let analyticsToDate = '';
+        let analyticsTopN = 10;
+        let analyticsTrendPeriod = 'daily';
+
+        function getAnalyticsData() {
+            const completedTickets = Object.values(ticketsState).filter(t => t.status === 'Completed');
+            const allHistory = [
+                ...completedTickets.map(t => {
+                    const sups = t.supplements || (t.supplement ? [t.supplement] : []);
+                    let materialCost = 0;
+                    sups.forEach(s => {
+                        if (s.totalCost) {
+                            materialCost += s.totalCost;
+                        } else {
+                            const details = s.details || [];
+                            details.forEach(m => {
+                                materialCost += (typeof m.unitCost === 'number' && typeof m.qty === 'number') ? m.unitCost * m.qty : 0;
+                            });
+                        }
+                    });
+                    const repairSecs = t.repairSeconds || 0;
+                    const laborCost = Number(((repairSecs / 3600) * LABOR_RATE_PER_HOUR).toFixed(2));
+                    return {
+                        defectCode: t.meta.defectCode || 'Unknown',
+                        defectOwner: t.meta.defectOwner || 'Unknown',
+                        completedAt: t.completedAt || t.scanDate || '',
+                        laborCost,
+                        materialCost,
+                        totalCost: laborCost + materialCost,
+                        repairSeconds: repairSecs
+                    };
+                }),
+                ...staticHistory.map(h => ({
+                    defectCode: h.defect || 'Unknown',
+                    defectOwner: 'N/A',
+                    completedAt: h.completedAt || h.scanDate || '',
+                    laborCost: 0,
+                    materialCost: 0,
+                    totalCost: 0,
+                    repairSeconds: 0
+                }))
+            ];
+
+            return allHistory.filter(item => {
+                if (!item.completedAt) return true;
+                const d = new Date(item.completedAt);
+                if (isNaN(d.getTime())) return true;
+                if (analyticsFromDate) {
+                    if (d < new Date(analyticsFromDate + 'T00:00:00')) return false;
+                }
+                if (analyticsToDate) {
+                    if (d > new Date(analyticsToDate + 'T23:59:59')) return false;
+                }
+                return true;
+            });
+        }
+
+        function renderAnalytics() {
+            return `
+            <div style="display:flex; flex-direction:column; gap:24px;">
+                <!-- Filter Bar -->
+                <div style="background:#fff; border-radius:12px; border:1px solid var(--panel-line); padding:16px 20px; display:flex; flex-wrap:wrap; gap:16px; align-items:center;">
+                    <div style="font-weight:700; font-size:13px; color:var(--amber); flex-shrink:0;">&#128202; Filter Period</div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <label style="font-size:12px; color:var(--txt-dim); font-weight:600;">From</label>
+                        <input type="date" id="analyticsFromDate" value="${analyticsFromDate}"
+                            onchange="analyticsFromDate=this.value; refreshAnalyticsCharts();"
+                            style="border:1px solid var(--panel-line); border-radius:6px; padding:5px 10px; font-size:12px; background:#f9fafb;">
+                        <label style="font-size:12px; color:var(--txt-dim); font-weight:600;">To</label>
+                        <input type="date" id="analyticsToDate" value="${analyticsToDate}"
+                            onchange="analyticsToDate=this.value; refreshAnalyticsCharts();"
+                            style="border:1px solid var(--panel-line); border-radius:6px; padding:5px 10px; font-size:12px; background:#f9fafb;">
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button class="btn-sm btn-ghost" onclick="setAnalyticsQuickFilter(7)">Last 7 Days</button>
+                        <button class="btn-sm btn-ghost" onclick="setAnalyticsQuickFilter(30)">Last 30 Days</button>
+                        <button class="btn-sm btn-ghost" onclick="setAnalyticsQuickFilter(90)">Last 90 Days</button>
+                        <button class="btn-sm btn-steel" onclick="analyticsFromDate=''; analyticsToDate=''; document.getElementById('analyticsFromDate').value=''; document.getElementById('analyticsToDate').value=''; refreshAnalyticsCharts();">All Time</button>
+                    </div>
+                    <div style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <label style="font-size:12px; color:var(--txt-dim); font-weight:600;">Top N</label>
+                        <select id="analyticsTopN" onchange="analyticsTopN=parseInt(this.value); refreshAnalyticsCharts();"
+                            style="border:1px solid var(--panel-line); border-radius:6px; padding:5px 10px; font-size:12px; background:#f9fafb;">
+                            <option value="5" ${analyticsTopN === 5 ? 'selected' : ''}>Top 5</option>
+                            <option value="10" ${analyticsTopN === 10 ? 'selected' : ''}>Top 10</option>
+                            <option value="15" ${analyticsTopN === 15 ? 'selected' : ''}>Top 15</option>
+                            <option value="20" ${analyticsTopN === 20 ? 'selected' : ''}>Top 20</option>
+                        </select>
+                        <label style="font-size:12px; color:var(--txt-dim); font-weight:600; margin-left:8px;">Trend By</label>
+                        <select id="analyticsTrendPeriod" onchange="analyticsTrendPeriod=this.value; refreshAnalyticsCharts();"
+                            style="border:1px solid var(--panel-line); border-radius:6px; padding:5px 10px; font-size:12px; background:#f9fafb;">
+                            <option value="daily" ${analyticsTrendPeriod === 'daily' ? 'selected' : ''}>Daily</option>
+                            <option value="weekly" ${analyticsTrendPeriod === 'weekly' ? 'selected' : ''}>Weekly</option>
+                            <option value="monthly" ${analyticsTrendPeriod === 'monthly' ? 'selected' : ''}>Monthly</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Chart 1: Pareto -->
+                <div style="background:#fff; border-radius:12px; border:1px solid var(--panel-line); padding:20px;">
+                    <div style="margin-bottom:16px;">
+                        <div style="font-size:15px; font-weight:700; color:#1f2937; font-family:'Oswald',sans-serif;">&#127358; Top Defect Codes by Repair Count (Pareto)</div>
+                        <div style="font-size:12px; color:var(--txt-dim); margin-top:3px;">Bars = Repair Count &nbsp;|&nbsp; Line = Total Cost (Labor + Material)</div>
+                    </div>
+                    <div style="position:relative; height:320px;">
+                        <canvas id="analyticsPareto"></canvas>
+                    </div>
+                </div>
+
+                <!-- Charts Row 2 -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+                    <div style="background:#fff; border-radius:12px; border:1px solid var(--panel-line); padding:20px;">
+                        <div style="margin-bottom:16px;">
+                            <div style="font-size:15px; font-weight:700; color:#1f2937; font-family:'Oswald',sans-serif;">&#128181; Top Repair Owners by Total Cost</div>
+                            <div style="font-size:12px; color:var(--txt-dim); margin-top:3px;">Ranked by Total Cost descending</div>
+                        </div>
+                        <div style="position:relative; height:300px;">
+                            <canvas id="analyticsOwners"></canvas>
+                        </div>
+                    </div>
+                    <div style="background:#fff; border-radius:12px; border:1px solid var(--panel-line); padding:20px;">
+                        <div style="margin-bottom:16px;">
+                            <div style="font-size:15px; font-weight:700; color:#1f2937; font-family:'Oswald',sans-serif;">&#128269; Top Defect Codes by Total Cost</div>
+                            <div style="font-size:12px; color:var(--txt-dim); margin-top:3px;">Ranked by Total Cost (Labor + Material) descending</div>
+                        </div>
+                        <div style="position:relative; height:300px;">
+                            <canvas id="analyticsDefectCost"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart 4: Cost Trend -->
+                <div style="background:#fff; border-radius:12px; border:1px solid var(--panel-line); padding:20px;">
+                    <div style="margin-bottom:16px;">
+                        <div style="font-size:15px; font-weight:700; color:#1f2937; font-family:'Oswald',sans-serif;">&#128200; Cost Trend Over Time</div>
+                        <div style="font-size:12px; color:var(--txt-dim); margin-top:3px;">Total Repair Cost (Labor + Material) aggregated by selected period</div>
+                    </div>
+                    <div style="position:relative; height:280px;">
+                        <canvas id="analyticsTrend"></canvas>
+                    </div>
+                </div>
+
+                <!-- KPI Row -->
+                <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px;">
+                    <div class="kpi" id="kpiTotalRepairs"><div class="num">0</div><div class="lbl">Total Repairs</div></div>
+                    <div class="kpi green" id="kpiTotalLaborCost"><div class="num">$0</div><div class="lbl">Total Labor Cost</div></div>
+                    <div class="kpi amber" id="kpiTotalMaterialCost"><div class="num">$0</div><div class="lbl">Total Material Cost</div></div>
+                    <div class="kpi" id="kpiTotalCost"><div class="num">$0</div><div class="lbl">Grand Total Cost</div></div>
+                </div>
+            </div>
+            `;
+        }
+
+        window.setAnalyticsQuickFilter = function (days) {
+            const to = new Date();
+            const from = new Date();
+            from.setDate(from.getDate() - days);
+            analyticsFromDate = from.toISOString().split('T')[0];
+            analyticsToDate = to.toISOString().split('T')[0];
+            const fd = document.getElementById('analyticsFromDate');
+            const td = document.getElementById('analyticsToDate');
+            if (fd) fd.value = analyticsFromDate;
+            if (td) td.value = analyticsToDate;
+            refreshAnalyticsCharts();
+        };
+
+        function destroyAnalyticsCharts() {
+            Object.keys(analyticsCharts).forEach(k => {
+                if (analyticsCharts[k]) { analyticsCharts[k].destroy(); analyticsCharts[k] = null; }
+            });
+        }
+
+        function refreshAnalyticsCharts() {
+            destroyAnalyticsCharts();
+            const data = getAnalyticsData();
+            if (!data.length) return;
+
+            const byDefect = {};
+            data.forEach(r => {
+                if (!byDefect[r.defectCode]) byDefect[r.defectCode] = { count: 0, laborCost: 0, materialCost: 0, totalCost: 0 };
+                byDefect[r.defectCode].count++;
+                byDefect[r.defectCode].laborCost += r.laborCost;
+                byDefect[r.defectCode].materialCost += r.materialCost;
+                byDefect[r.defectCode].totalCost += r.totalCost;
+            });
+
+            const byOwner = {};
+            data.forEach(r => {
+                if (!byOwner[r.defectOwner]) byOwner[r.defectOwner] = { totalCost: 0, count: 0 };
+                byOwner[r.defectOwner].totalCost += r.totalCost;
+                byOwner[r.defectOwner].count++;
+            });
+
+            const totalLabor = data.reduce((a, r) => a + r.laborCost, 0);
+            const totalMat = data.reduce((a, r) => a + r.materialCost, 0);
+            const grandTotal = totalLabor + totalMat;
+            const kpiR = document.getElementById('kpiTotalRepairs');
+            const kpiL = document.getElementById('kpiTotalLaborCost');
+            const kpiM = document.getElementById('kpiTotalMaterialCost');
+            const kpiT = document.getElementById('kpiTotalCost');
+            if (kpiR) kpiR.querySelector('.num').textContent = data.length;
+            if (kpiL) kpiL.querySelector('.num').textContent = '$' + totalLabor.toFixed(2);
+            if (kpiM) kpiM.querySelector('.num').textContent = '$' + totalMat.toFixed(2);
+            if (kpiT) kpiT.querySelector('.num').textContent = '$' + grandTotal.toFixed(2);
+
+            const PALETTE_BARS = '#1b4d3e';
+            const PALETTE_LINE = '#d97706';
+            const PALETTE_OWNERS = ['#1b4d3e', '#2d6a4f', '#40916c', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7', '#d8f3dc', '#e9f5e9', '#f0fdf4'];
+
+            // Chart 1: Pareto
+            const sortedByCount = Object.entries(byDefect).sort((a, b) => b[1].count - a[1].count).slice(0, analyticsTopN);
+            const paretoCtx = document.getElementById('analyticsPareto');
+            if (paretoCtx) {
+                analyticsCharts.pareto = new Chart(paretoCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: sortedByCount.map(([code]) => code),
+                        datasets: [
+                            {
+                                label: 'Repair Count',
+                                data: sortedByCount.map(([, v]) => v.count),
+                                backgroundColor: sortedByCount.map((_, i) => i === 0 ? '#b91c1c' : PALETTE_BARS),
+                                borderRadius: 6, yAxisID: 'yCount', order: 2
+                            },
+                            {
+                                label: 'Total Cost ($)',
+                                data: sortedByCount.map(([, v]) => v.totalCost),
+                                type: 'line', borderColor: PALETTE_LINE,
+                                backgroundColor: 'rgba(217,119,6,0.1)', borderWidth: 2.5,
+                                pointRadius: 5, pointBackgroundColor: PALETTE_LINE,
+                                fill: false, tension: 0.35, yAxisID: 'yCost', order: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { position: 'top', labels: { font: { family: 'Inter', size: 12 } } },
+                            tooltip: { callbacks: { label: ctx => ctx.dataset.label === 'Total Cost ($)' ? ` Total Cost: $${ctx.raw.toFixed(2)}` : ` Repair Count: ${ctx.raw}` } }
+                        },
+                        scales: {
+                            yCount: { type: 'linear', position: 'left', title: { display: true, text: 'Repair Count', font: { size: 11 } }, ticks: { stepSize: 1 }, grid: { color: '#f3f4f6' } },
+                            yCost: { type: 'linear', position: 'right', title: { display: true, text: 'Total Cost ($)', font: { size: 11 } }, ticks: { callback: v => '$' + v.toFixed(0) }, grid: { display: false } },
+                            x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+                        }
+                    }
+                });
+            }
+
+            // Chart 2: Owners by cost
+            const sortedOwners = Object.entries(byOwner).sort((a, b) => b[1].totalCost - a[1].totalCost).slice(0, analyticsTopN);
+            const ownersCtx = document.getElementById('analyticsOwners');
+            if (ownersCtx) {
+                analyticsCharts.owners = new Chart(ownersCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: sortedOwners.map(([o]) => o),
+                        datasets: [{ label: 'Total Cost ($)', data: sortedOwners.map(([, v]) => v.totalCost), backgroundColor: PALETTE_OWNERS.slice(0, sortedOwners.length), borderRadius: 6 }]
+                    },
+                    options: {
+                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` $${ctx.raw.toFixed(2)}` } } },
+                        scales: { x: { ticks: { callback: v => '$' + v.toFixed(0), font: { size: 11 } }, grid: { color: '#f3f4f6' } }, y: { ticks: { font: { size: 11 } }, grid: { display: false } } }
+                    }
+                });
+            }
+
+            // Chart 3: Defect codes by cost
+            const sortedByTotalCost = Object.entries(byDefect).sort((a, b) => b[1].totalCost - a[1].totalCost).slice(0, analyticsTopN);
+            const defectCostCtx = document.getElementById('analyticsDefectCost');
+            if (defectCostCtx) {
+                analyticsCharts.defectCost = new Chart(defectCostCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: sortedByTotalCost.map(([code]) => code),
+                        datasets: [{ label: 'Total Cost ($)', data: sortedByTotalCost.map(([, v]) => v.totalCost), backgroundColor: sortedByTotalCost.map((_, i) => i === 0 ? '#b91c1c' : '#1b4d3e'), borderRadius: 6 }]
+                    },
+                    options: {
+                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` $${ctx.raw.toFixed(2)}` } } },
+                        scales: { x: { ticks: { callback: v => '$' + v.toFixed(0), font: { size: 11 } }, grid: { color: '#f3f4f6' } }, y: { ticks: { font: { size: 11 } }, grid: { display: false } } }
+                    }
+                });
+            }
+
+            // Chart 4: Trend
+            const trendMap = {};
+            data.forEach(r => {
+                if (!r.completedAt) return;
+                const d = new Date(r.completedAt);
+                if (isNaN(d.getTime())) return;
+                let key;
+                if (analyticsTrendPeriod === 'daily') {
+                    key = d.toISOString().split('T')[0];
+                } else if (analyticsTrendPeriod === 'weekly') {
+                    const sow = new Date(d); sow.setDate(d.getDate() - d.getDay());
+                    key = 'W/' + sow.toISOString().split('T')[0];
+                } else {
+                    key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+                }
+                if (!trendMap[key]) trendMap[key] = { laborCost: 0, materialCost: 0, totalCost: 0 };
+                trendMap[key].laborCost += r.laborCost;
+                trendMap[key].materialCost += r.materialCost;
+                trendMap[key].totalCost += r.totalCost;
+            });
+            const trendKeys = Object.keys(trendMap).sort();
+            const trendCtx = document.getElementById('analyticsTrend');
+            if (trendCtx) {
+                analyticsCharts.trend = new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: trendKeys,
+                        datasets: [
+                            { label: 'Labor Cost ($)', data: trendKeys.map(k => trendMap[k].laborCost), borderColor: '#1b4d3e', backgroundColor: 'rgba(27,77,62,0.1)', fill: true, borderWidth: 2.5, pointRadius: 4, tension: 0.4 },
+                            { label: 'Material Cost ($)', data: trendKeys.map(k => trendMap[k].materialCost), borderColor: '#d97706', backgroundColor: 'rgba(217,119,6,0.1)', fill: true, borderWidth: 2.5, pointRadius: 4, tension: 0.4 },
+                            { label: 'Total Cost ($)', data: trendKeys.map(k => trendMap[k].totalCost), borderColor: '#b91c1c', backgroundColor: 'rgba(185,28,28,0)', fill: false, borderWidth: 3, pointRadius: 5, borderDash: [5, 3], tension: 0.4 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: { legend: { position: 'top', labels: { font: { family: 'Inter', size: 12 } } }, tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: $${ctx.raw.toFixed(2)}` } } },
+                        scales: { y: { ticks: { callback: v => '$' + v.toFixed(0), font: { size: 11 } }, grid: { color: '#f3f4f6' } }, x: { ticks: { font: { size: 11 } }, grid: { display: false } } }
+                    }
+                });
+            }
+        }
+
         // 5. REPAIR COMPLETED HISTORY VIEW
         function renderHistory() {
             const completedTickets = Object.values(ticketsState).filter(t => t.status === "Completed");
@@ -2667,6 +3092,46 @@
                         completedDate = new Date(h.completedAt).toLocaleDateString();
                     } catch (e) { }
                 }
+
+                let materialNameLines = [];
+                let unitCostLines = [];
+                let qtyLines = [];
+                let materialCostLines = [];
+
+                const sups = [];
+                const allSups = h.supplements || [];
+                allSups.forEach(s => {
+                    if (!sups.some(e => e.requestCode === s.requestCode)) sups.push(s);
+                });
+                if (h.supplement && h.supplement.needed && !sups.some(e => e.requestCode === h.supplement.requestCode)) {
+                    sups.push(h.supplement);
+                }
+
+                sups.forEach(s => {
+                    const details = s.details || [];
+                    if (details.length > 0) {
+                        details.forEach(m => {
+                            materialNameLines.push(m.name || m.code || 'N/A');
+                            unitCostLines.push(typeof m.unitCost === 'number' ? `$${m.unitCost.toFixed(2)}` : 'N/A');
+                            qtyLines.push(m.qty || 0);
+                            const cost = (typeof m.unitCost === 'number' && typeof m.qty === 'number') ? (m.unitCost * m.qty) : 0;
+                            materialCostLines.push(`$${cost.toFixed(2)}`);
+                        });
+                    } else {
+                        materialNameLines.push(s.partName || 'N/A');
+                        qtyLines.push(s.qty || 0);
+                        const cost = s.totalCost || 0;
+                        const qty = s.qty || 1;
+                        unitCostLines.push(`$${(cost / qty).toFixed(2)}`);
+                        materialCostLines.push(`$${cost.toFixed(2)}`);
+                    }
+                });
+
+                const matNameHtml = materialNameLines.length > 0 ? materialNameLines.join('<br>') : '-';
+                const unitCostHtml = unitCostLines.length > 0 ? unitCostLines.join('<br>') : '-';
+                const qtyHtml = qtyLines.length > 0 ? qtyLines.join('<br>') : '-';
+                const matCostHtml = materialCostLines.length > 0 ? materialCostLines.join('<br>') : '-';
+
                 return `
                 <tr>
                     <td class="mono" style="font-weight: 600; color: var(--amber);">${h.reportId || h.masterSku || 'N/A'}</td>
@@ -2675,6 +3140,10 @@
                     <td>${h.meta.defectCode || 'N/A'}</td>
                     <td>${completedDate}</td>
                     <td>${formatTime(h.repairSeconds)}</td>
+                    <td>${matNameHtml}</td>
+                    <td>${unitCostHtml}</td>
+                    <td>${qtyHtml}</td>
+                    <td>${matCostHtml}</td>
                 </tr>
             `;
             }).join('');
@@ -2684,7 +3153,7 @@
                 if (h.completedAt) {
                     try {
                         completedDate = new Date(h.completedAt).toLocaleDateString();
-                    } catch(e) {}
+                    } catch (e) { }
                 }
                 let duration = '01:15:00';
                 if (h.startedAt && h.completedAt) {
@@ -2699,6 +3168,10 @@
                     <td>${h.defect}</td>
                     <td>${completedDate}</td>
                     <td>${duration}</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
                 </tr>
             `;
             }).join('');
@@ -2730,6 +3203,10 @@
                                 <th>Defect Case</th>
                                 <th>Completed Date</th>
                                 <th>Actual Duration</th>
+                                <th>Material Name</th>
+                                <th>Unit Cost ($)</th>
+                                <th>Quantity</th>
+                                <th>Material Cost</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -3097,6 +3574,12 @@
             const ticket = inspectionData.find(t => t.id === ticketId);
             if (!ticket) return;
 
+            const ticketState = ticketsState[ticketId];
+            if (ticketState && ticketState.status === 'Completed') {
+                alert('⚠️ Cannot create a supplement request for a completed ticket.');
+                return;
+            }
+
             // Prefill master info
             const generatedCode = `SRC-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Math.floor(1000 + Math.random() * 9000))}`;
             document.getElementById('sup-code').value = generatedCode;
@@ -3138,6 +3621,14 @@
             document.getElementById('sup-material-code').selectedIndex = 0;
         }
 
+        const MATERIAL_UNIT_COSTS = {
+            'MAT-01829265-WP': 15.00,
+            'MAT-01835419-WP': 18.50,
+            'MAT-33221100-YY': 4.50,
+            'MAT-GEN-BOLT-M6': 0.50,
+            'MAT-GEN-GLUE-WP': 2.00
+        };
+
         window.addMaterialToRequest = function () {
             const wo = document.getElementById('sup-material-wo').value;
             const itemCode = document.getElementById('sup-material-item').value;
@@ -3151,12 +3642,17 @@
                 return;
             }
 
+            const unitCost = MATERIAL_UNIT_COSTS[materialCode] || 1.00;
+            const materialCost = Number((unitCost * qty).toFixed(2));
+
             const newMat = {
                 code: materialCode,
                 name: materialName,
                 dimension: '18 x 400 x 600',
                 unit: 'pcs',
                 qty: qty,
+                unitCost: unitCost,
+                materialCost: materialCost,
                 wo: wo,
                 itemCode: itemCode,
                 revision: 'A',
@@ -3182,6 +3678,8 @@
                 <td>${m.dimension}</td>
                 <td>${m.unit}</td>
                 <td><strong>${m.qty}</strong></td>
+                <td>$${(m.unitCost || 0).toFixed(2)}</td>
+                <td>$${(m.materialCost || 0).toFixed(2)}</td>
                 <td>${m.wo}</td>
                 <td>${m.itemCode}</td>
                 <td>${m.revision}</td>
@@ -3219,29 +3717,49 @@
 
             // Persist the supplement info in the localStorage status bridge
             const statuses = readStoredRepairTicketStatuses();
-            const saved = statuses[currentSupTicketId] || {};
+            const itemCode = ticketsState[currentSupTicketId] && ticketsState[currentSupTicketId].meta && ticketsState[currentSupTicketId].meta.itemCode;
+            const saved = statuses[currentSupTicketId] || (itemCode ? statuses[itemCode] : null) || {};
+
+            const newRequest = {
+                needed: true,
+                status: 'waiting',
+                partName: requestMaterialsList.map(m => m.name).join(', '),
+                qty: requestMaterialsList.reduce((acc, m) => acc + m.qty, 0),
+                eta: "Pending Approval",
+                requestCode: document.getElementById('sup-code').value,
+                details: requestMaterialsList,
+                totalCost: Number(requestMaterialsList.reduce((acc, m) => acc + (m.unitCost * m.qty), 0).toFixed(2))
+            };
+
+            const supplements = saved.supplements || [];
+            if (saved.supplement && saved.supplement.needed) {
+                if (!supplements.some(s => s.requestCode === saved.supplement.requestCode)) {
+                    supplements.push(saved.supplement);
+                }
+            }
+            if (!supplements.some(s => s.requestCode === newRequest.requestCode)) {
+                supplements.push(newRequest);
+            }
 
             statuses[currentSupTicketId] = {
                 ...saved,
                 status: 'Waiting for supplement approve',
                 updatedAt: new Date().toISOString(),
-                supplement: {
-                    needed: true,
-                    status: 'waiting',
-                    partName: requestMaterialsList.map(m => m.name).join(', '),
-                    qty: requestMaterialsList.reduce((acc, m) => acc + m.qty, 0),
-                    eta: "Pending Approval",
-                    requestCode: document.getElementById('sup-code').value,
-                    details: requestMaterialsList
-                }
+                supplement: newRequest,
+                supplements: supplements
             };
+            if (itemCode) {
+                statuses[itemCode] = statuses[currentSupTicketId];
+            }
 
             // Also update in-memory state so UI updates immediately
             if (ticketsState[currentSupTicketId]) {
                 ticketsState[currentSupTicketId].status = 'Waiting for supplement approve';
                 ticketsState[currentSupTicketId].updatedAt = new Date().toISOString();
-                ticketsState[currentSupTicketId].supplement = statuses[currentSupTicketId].supplement;
-                ticketsState[currentSupTicketId].meta.supplement = statuses[currentSupTicketId].supplement;
+                ticketsState[currentSupTicketId].supplement = newRequest;
+                ticketsState[currentSupTicketId].supplements = supplements;
+                ticketsState[currentSupTicketId].meta.supplement = newRequest;
+                ticketsState[currentSupTicketId].meta.supplements = supplements;
             }
 
             writeStoredRepairTicketStatuses(statuses);
@@ -3264,14 +3782,14 @@
             updateSidebarBadges();
         }
 
-        window.autoPopulateSupplementItems = function() {
+        window.autoPopulateSupplementItems = function () {
             if (!currentSupTicketId) return;
             const ticket = inspectionData.find(t => t.id === currentSupTicketId);
             if (!ticket) return;
 
             const wo = ticket.wo || '';
             const itemCode = ticket.itemCode || '';
-            
+
             let itemsToOrder = [];
             if (ticket.defectCode && (ticket.defectCode.includes('Leakage') || ticket.defectCode.includes('Seal') || ticket.defectCode.includes('D-014'))) {
                 itemsToOrder = [
@@ -3381,109 +3899,207 @@
                 if (res.ok) {
                     const data = await res.json();
                     m = data.master || {};
-                    items = data.items || [];
+                    const rawItems = data.items || [];
+                    items = rawItems.map(item => {
+                        const code = item['Material Code'] || '';
+                        const qty = Number(item['Supplement Qty']) || 0;
+                        const uCost = item['Unit Cost'] !== undefined ? item['Unit Cost'] : (MATERIAL_UNIT_COSTS[code] || 1.00);
+                        return {
+                            ...item,
+                            'Unit Cost': uCost,
+                            'Material Cost': item['Material Cost'] !== undefined ? item['Material Cost'] : (uCost * qty)
+                        };
+                    });
                 }
             } catch (err) {
                 console.warn('API fetch failed, falling back to local storage:', err);
             }
 
             if (!m) {
-                // Fallback: look in localStorage statuses
-                const localStatusesRaw = localStorage.getItem('qms_repair_ticket_statuses');
-                const statuses = localStatusesRaw ? JSON.parse(localStatusesRaw) : {};
-                let localData = null;
-                for (const key in statuses) {
-                    const entry = statuses[key];
-                    if (entry && entry.supplement && entry.supplement.requestCode === requestCode) {
-                        localData = entry;
-                        break;
+                // Check in-memory ticketsState first
+                if (typeof ticketsState !== 'undefined') {
+                    for (const key in ticketsState) {
+                        const entry = ticketsState[key];
+                        if (!entry) continue;
+                        if (entry.supplement && entry.supplement.requestCode === requestCode) {
+                            m = {
+                                requestCode: requestCode,
+                                status: entry.status || 'Pending',
+                                requestDept: 'Production Dept',
+                                relatedDept: entry.supplement.relatedDept || 'Warehouse',
+                                createBy: localStorage.getItem('username') || 'Unknown',
+                                createDate: entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : new Date().toLocaleDateString(),
+                                reasonToRequest: entry.supplement.reason || 'Material Supplement',
+                                totalCost: entry.supplement.totalCost
+                            };
+                            items = entry.supplement.details || [];
+                            break;
+                        }
+                        if (entry.supplements && Array.isArray(entry.supplements)) {
+                            const found = entry.supplements.find(s => s.requestCode === requestCode);
+                            if (found) {
+                                m = {
+                                    requestCode: requestCode,
+                                    status: entry.status || 'Pending',
+                                    requestDept: 'Production Dept',
+                                    relatedDept: found.relatedDept || 'Warehouse',
+                                    createBy: localStorage.getItem('username') || 'Unknown',
+                                    createDate: entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : new Date().toLocaleDateString(),
+                                    reasonToRequest: found.reason || 'Material Supplement',
+                                    totalCost: found.totalCost
+                                };
+                                items = found.details || [];
+                                break;
+                            }
+                        }
                     }
-                }
-                if (localData) {
-                    m = {
-                        requestCode: requestCode,
-                        status: localData.status || 'Pending',
-                        requestDept: 'Production Dept',
-                        relatedDept: localData.supplement.relatedDept || 'Warehouse',
-                        createBy: localStorage.getItem('username') || 'Unknown',
-                        createDate: localData.updatedAt ? new Date(localData.updatedAt).toLocaleDateString() : new Date().toLocaleDateString(),
-                        reasonToRequest: localData.supplement.reason || 'Material Supplement'
-                    };
-                    items = (localData.supplement.details || []).map(item => ({
-                        'Material Code': item.code || 'N/A',
-                        'Material Name': item.name || 'N/A',
-                        'Unit': item.unit || 'pcs',
-                        'Supplement Qty': item.qty || 0,
-                        'HOD': 'Pending',
-                        'Related HOD': 'Pending',
-                        'BOD': 'Pending'
-                    }));
                 }
             }
 
             if (!m) {
+                // Fallback: look in localStorage statuses
+                const statuses = typeof readStoredRepairTicketStatuses === 'function'
+                    ? readStoredRepairTicketStatuses()
+                    : {};
+                for (const key in statuses) {
+                    const entry = statuses[key];
+                    if (!entry) continue;
+                    if (entry.supplement && entry.supplement.requestCode === requestCode) {
+                        m = {
+                            requestCode: requestCode,
+                            status: entry.status || 'Pending',
+                            requestDept: 'Production Dept',
+                            relatedDept: entry.supplement.relatedDept || 'Warehouse',
+                            createBy: localStorage.getItem('username') || 'Unknown',
+                            createDate: entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : new Date().toLocaleDateString(),
+                            reasonToRequest: entry.supplement.reason || 'Material Supplement',
+                            totalCost: entry.supplement.totalCost
+                        };
+                        items = entry.supplement.details || [];
+                        break;
+                    }
+                    if (entry.supplements && Array.isArray(entry.supplements)) {
+                        const found = entry.supplements.find(s => s.requestCode === requestCode);
+                        if (found) {
+                            m = {
+                                requestCode: requestCode,
+                                status: entry.status || 'Pending',
+                                requestDept: 'Production Dept',
+                                relatedDept: found.relatedDept || 'Warehouse',
+                                createBy: localStorage.getItem('username') || 'Unknown',
+                                createDate: entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : new Date().toLocaleDateString(),
+                                reasonToRequest: found.reason || 'Material Supplement',
+                                totalCost: found.totalCost
+                            };
+                            items = found.details || [];
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (m && items) {
+                items = items.map(item => {
+                    const code = item.code || item['Material Code'] || 'N/A';
+                    const uCost = item.unitCost !== undefined ? item.unitCost : (MATERIAL_UNIT_COSTS[code] || 1.00);
+                    return {
+                        'Material Code': code,
+                        'Material Name': item.name || item['Material Name'] || 'N/A',
+                        'Unit': item.unit || item['Unit'] || 'pcs',
+                        'Supplement Qty': item.qty || item['Supplement Qty'] || 0,
+                        'Unit Cost': uCost,
+                        'Material Cost': item.materialCost !== undefined ? item.materialCost : (uCost * (item.qty || item['Supplement Qty'] || 0)),
+                        'HOD': item['HOD'] || 'Pending',
+                        'Related HOD': item['Related HOD'] || 'Pending',
+                        'BOD': item['BOD'] || 'Pending'
+                    };
+                });
+            }
+
+            if (!m) {
                 document.getElementById('supplementModalBody').innerHTML = `
-                    <div style="padding: 1.5rem; background: #fee2e2; color: #ef4444; border-radius: 8px; font-weight: 600;">
-                        Error loading supplement request details: Request not found on server or locally.
-                    </div>
-                `;
+                <div style="padding: 1.5rem; background: #fee2e2; color: #ef4444; border-radius: 8px; font-weight: 600;">
+                    Error loading supplement request details: Request not found on server or locally.
+                </div>
+            `;
                 return;
             }
 
             let itemsHtml = '';
             if (items.length === 0) {
-                itemsHtml = '<tr><td colspan="8" style="text-align:center; padding: 1.5rem; color:#6b7280;">No materials listed</td></tr>';
+                itemsHtml = '<tr><td colspan="10" style="text-align:center; padding: 1.5rem; color:#6b7280;">No materials listed</td></tr>';
             } else {
                 items.forEach((item, idx) => {
                     itemsHtml += `
-                        <tr>
-                            <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb;">${idx + 1}</td>
-                            <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; font-family: monospace;">${item['Material Code'] || 'N/A'}</td>
-                            <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb;">${item['Material Name'] || 'N/A'}</td>
-                            <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: center;">${item['Unit'] || 'N/A'}</td>
-                            <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">${item['Supplement Qty'] || 0}</td>
-                            <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: 600;">${item['HOD'] || 'Pending'}</td>
-                            <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: 600;">${item['Related HOD'] || 'Pending'}</td>
-                            <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: 600;">${item['BOD'] || 'Pending'}</td>
-                        </tr>
-                    `;
+                    <tr>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb;">${idx + 1}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; font-family: monospace;">${item['Material Code'] || 'N/A'}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb;">${item['Material Name'] || 'N/A'}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: center;">${item['Unit'] || 'N/A'}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">${item['Supplement Qty'] || 0}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: right;">$${(item['Unit Cost'] || 0).toFixed(2)}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">$${(item['Material Cost'] || 0).toFixed(2)}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: 600;">${item['HOD'] || 'Pending'}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: 600;">${item['Related HOD'] || 'Pending'}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: 600;">${item['BOD'] || 'Pending'}</td>
+                    </tr>
+                `;
                 });
             }
 
+            // Calculate aggregate totalCost if not explicitly present
+            const totalCostSum = m.totalCost !== undefined ? m.totalCost : items.reduce((acc, it) => acc + (it['Material Cost'] || 0), 0);
+
             document.getElementById('supplementModalBody').innerHTML = `
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; background: #f3f4f6; padding: 1rem; border-radius: 8px; font-size: 0.875rem;">
-                    <div><strong>Request Code:</strong> ${m.requestCode || requestCode}</div>
-                    <div><strong>Status:</strong> <span style="font-weight:700; color: #1b4d3e;">${m.status || 'Pending'}</span></div>
-                    <div><strong>Request Dept:</strong> ${m.requestDept || 'N/A'}</div>
-                    <div><strong>Related Dept:</strong> ${m.relatedDept || 'N/A'}</div>
-                    <div><strong>Create By:</strong> ${m.createBy || 'N/A'}</div>
-                    <div><strong>Create Date:</strong> ${m.createDate || 'N/A'}</div>
-                    <div style="grid-column: 1 / -1;"><strong>Reason:</strong> ${m.reasonToRequest || 'N/A'}</div>
-                </div>
-                <div style="font-weight: bold; margin-bottom: 0.5rem; font-family: 'Oswald', sans-serif;">Materials Required:</div>
-                <div style="overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 8px;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
-                        <thead>
-                            <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
-                                <th style="padding: 0.75rem 1rem;">No.</th>
-                                <th style="padding: 0.75rem 1rem;">Material Code</th>
-                                <th style="padding: 0.75rem 1rem;">Material Name</th>
-                                <th style="padding: 0.75rem 1rem; text-align: center;">Unit</th>
-                                <th style="padding: 0.75rem 1rem; text-align: right;">Qty</th>
-                                <th style="padding: 0.75rem 1rem; text-align: center;">HOD</th>
-                                <th style="padding: 0.75rem 1rem; text-align: center;">Rel HOD</th>
-                                <th style="padding: 0.75rem 1rem; text-align: center;">BOD</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${itemsHtml}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; background: #f3f4f6; padding: 1rem; border-radius: 8px; font-size: 0.875rem;">
+                <div><strong>Request Code:</strong> ${m.requestCode || requestCode}</div>
+                <div><strong>Status:</strong> <span style="font-weight:700; color: #1b4d3e;">${m.status || 'Pending'}</span></div>
+                <div><strong>Request Dept:</strong> ${m.requestDept || 'N/A'}</div>
+                <div><strong>Related Dept:</strong> ${m.relatedDept || 'N/A'}</div>
+                <div><strong>Create By:</strong> ${m.createBy || 'N/A'}</div>
+                <div><strong>Create Date:</strong> ${m.createDate || 'N/A'}</div>
+                <div><strong>Total Material Cost:</strong> <span style="font-weight:700; color: #d97706;">$${Number(totalCostSum).toFixed(2)}</span></div>
+                <div></div>
+                <div style="grid-column: 1 / -1;"><strong>Reason:</strong> ${m.reasonToRequest || 'N/A'}</div>
+            </div>
+            <div style="font-weight: bold; margin-bottom: 0.5rem; font-family: 'Oswald', sans-serif;">Materials Required:</div>
+            <div style="overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 8px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+                    <thead>
+                        <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                            <th style="padding: 0.75rem 1rem;">No.</th>
+                            <th style="padding: 0.75rem 1rem;">Material Code</th>
+                            <th style="padding: 0.75rem 1rem;">Material Name</th>
+                            <th style="padding: 0.75rem 1rem; text-align: center;">Unit</th>
+                            <th style="padding: 0.75rem 1rem; text-align: right;">Qty</th>
+                            <th style="padding: 0.75rem 1rem; text-align: right;">Unit Cost</th>
+                            <th style="padding: 0.75rem 1rem; text-align: right;">Total Cost</th>
+                            <th style="padding: 0.75rem 1rem; text-align: center;">HOD</th>
+                            <th style="padding: 0.75rem 1rem; text-align: center;">Rel HOD</th>
+                            <th style="padding: 0.75rem 1rem; text-align: center;">BOD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+            </div>
+        `;
         }
 
         window.closeSupplementForm = closeSupplementForm;
+
+        // Iframe detection — hide inner sidebar/topbar when embedded in qc-manager.html
+        (function detectIframe() {
+            try {
+                if (window.self !== window.top) {
+                    document.body.classList.add('in-iframe');
+                }
+            } catch (e) {
+                // cross-origin: assume in iframe
+                document.body.classList.add('in-iframe');
+            }
+        })();
 
         loadInspectionData();
     </script>
@@ -3805,7 +4421,9 @@
                     <div class="sup-tab">Supplement Request List <span class="sup-tab-close">×</span></div>
                     <div class="sup-tab active">New Supplement Request <span class="sup-tab-close">×</span></div>
                 </div>
-                <button id="btn-top-right-add" class="sup-btn btn-add" onclick="window.autoPopulateSupplementItems()" style="padding: 4px 12px; font-size: 12px; font-weight: bold; background: var(--amber); color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px;">➕ Add</button>
+                <button id="btn-top-right-add" class="sup-btn btn-add" onclick="window.autoPopulateSupplementItems()"
+                    style="padding: 4px 12px; font-size: 12px; font-weight: bold; background: var(--amber); color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px;">➕
+                    Add</button>
             </div>
 
             <div class="sup-modal-body">
@@ -3968,6 +4586,8 @@
                                     <th>Material Dimension(W-L-T)</th>
                                     <th>Unit</th>
                                     <th>Supplement Qty</th>
+                                    <th>Unit Cost</th>
+                                    <th>Material Cost</th>
                                     <th>WO</th>
                                     <th>Item Code</th>
                                     <th>Revision</th>
@@ -4001,7 +4621,6 @@
         </div>
     </div>
 
-    loadInspectionData();
     </script>
 </body>
 
