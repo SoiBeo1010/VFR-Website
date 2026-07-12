@@ -1750,6 +1750,11 @@
             const saved = storedStatuses[ticket.id] || storedStatuses[ticket.itemCode];
             const storedStatus = applyStoredRepairStatus(saved, defaultState.status, defaultState.repairSeconds, defaultState.repairRunning);
 
+            // Strip synced supplement from raw data
+            if (ticket.supplement && (!saved || !saved.supplement)) {
+                delete ticket.supplement;
+            }
+
             // Analyze legacy duplicates to filter out
             const isLegacy = ticket.id.startsWith("INH-");
             let isLegacyQuarantined = false;
@@ -1794,6 +1799,15 @@
             };
 
             if (storedStatus.supplement) {
+                // Migrate legacy supplement requests that don't have a requestCode
+                if (!storedStatus.supplement.requestCode) {
+                    storedStatus.supplement.requestCode = ticket.supplement_request_code || `SRC-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,'0')}-${String(Math.floor(1000 + Math.random()*9000))}`;
+                    const statuses = readStoredRepairTicketStatuses();
+                    if (statuses[ticket.id]) {
+                        statuses[ticket.id].supplement = storedStatus.supplement;
+                        writeStoredRepairTicketStatuses(statuses);
+                    }
+                }
                 ticket.supplement = storedStatus.supplement;
                 ticketsState[ticket.id].supplement = storedStatus.supplement;
             }
@@ -2341,6 +2355,11 @@
                                     <div><div class="fk">Supplement Part</div><div class="fv" style="font-size:13px;">${t.supplement.partName}</div></div>
                                     <div><div class="fk">Qty Requested</div><div class="fv">${t.supplement.qty} pcs</div></div>
                                     <div><div class="fk">${t.supplement.status === 'waiting' ? 'ETA' : 'Storage Bin'}</div><div class="fv mono" style="font-size:13px;">${t.supplement.status === 'waiting' ? (t.supplement.eta || 'Pending') : (t.supplement.location || 'Bin B-12')}</div></div>
+                                </div>
+                                <div style="margin-top: 10px;">
+                                    <button class="btn-sm btn-ghost" style="border-color: var(--amber); color: var(--amber); font-weight: bold; width: 100%;" onclick="viewSupplementRequestDetail('${t.supplement.requestCode || t.supplement_request_code || ''}')">
+                                        👁️ View Detail
+                                    </button>
                                 </div>
                             ` : `
                                 <div style="font-size:13px; color:var(--txt-dim);">No supplementary material parts needed for this repair task.</div>
@@ -3300,6 +3319,7 @@
                 partName: requestMaterialsList.map(m => m.name).join(', '),
                 qty: requestMaterialsList.reduce((acc, m) => acc + m.qty, 0),
                 eta: "Pending Approval",
+                requestCode: document.getElementById('sup-code').value,
                 details: requestMaterialsList
             }
         };
@@ -3392,6 +3412,163 @@
 
         renderSupplementMaterialsTable();
         showToast('Automatically populated supplement items to order!');
+    }
+
+    async function viewSupplementRequestDetail(requestCode) {
+        if (!requestCode) {
+            alert('No Supplement Request Code associated with this item.');
+            return;
+        }
+
+        const existing = document.getElementById('supplementDetailModal');
+        if (existing) existing.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'supplementDetailModal';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
+        modal.style.backdropFilter = 'blur(4px)';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.zIndex = '99999';
+
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 12px; width: 800px; max-width: 90%; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); overflow: hidden; color: #1f2937;">
+                <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #1b4d3e; color: white;">
+                    <h3 style="margin: 0; font-size: 1.25rem; font-family: 'Oswald', sans-serif; font-weight: bold;">Supplement Request Details: ${requestCode}</h3>
+                    <button onclick="document.getElementById('supplementDetailModal').remove()" style="background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
+                </div>
+                <div id="supplementModalBody" style="padding: 1.5rem; overflow-y: auto; flex: 1;">
+                    <div style="text-align: center; padding: 2rem; color: #6b7280;">
+                        <span style="display:inline-block; animation: modal-pulse 1.5s infinite;">⏳</span> Loading request details...
+                    </div>
+                </div>
+                <div style="padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb; background: #f9fafb; display: flex; justify-content: flex-end;">
+                    <button onclick="document.getElementById('supplementDetailModal').remove()" style="padding: 0.5rem 1rem; background: #374151; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Close</button>
+                </div>
+            </div>
+            <style>
+                @keyframes modal-pulse {
+                    0% { opacity: 0.5; }
+                    50% { opacity: 1; }
+                    100% { opacity: 0.5; }
+                }
+            </style>
+        `;
+        document.body.appendChild(modal);
+
+        let m = null;
+        let items = [];
+        try {
+            const res = await fetch(`/api/supplement-requests/${requestCode}`);
+            if (res.ok) {
+                const data = await res.json();
+                m = data.master || {};
+                items = data.items || [];
+            }
+        } catch (err) {
+            console.warn('API fetch failed, falling back to local storage:', err);
+        }
+
+        if (!m) {
+            // Fallback: look in localStorage statuses
+            const localStatusesRaw = localStorage.getItem('qms_repair_ticket_statuses');
+            const statuses = localStatusesRaw ? JSON.parse(localStatusesRaw) : {};
+            let localData = null;
+            for (const key in statuses) {
+                const entry = statuses[key];
+                if (entry && entry.supplement && entry.supplement.requestCode === requestCode) {
+                    localData = entry;
+                    break;
+                }
+            }
+            if (localData) {
+                m = {
+                    requestCode: requestCode,
+                    status: localData.status || 'Pending',
+                    requestDept: 'Production Dept',
+                    relatedDept: localData.supplement.relatedDept || 'Warehouse',
+                    createBy: localStorage.getItem('username') || 'Unknown',
+                    createDate: localData.updatedAt ? new Date(localData.updatedAt).toLocaleDateString() : new Date().toLocaleDateString(),
+                    reasonToRequest: localData.supplement.reason || 'Material Supplement'
+                };
+                items = (localData.supplement.details || []).map(item => ({
+                    'Material Code': item.code || 'N/A',
+                    'Material Name': item.name || 'N/A',
+                    'Unit': item.unit || 'pcs',
+                    'Supplement Qty': item.qty || 0,
+                    'HOD': 'Pending',
+                    'Related HOD': 'Pending',
+                    'BOD': 'Pending'
+                }));
+            }
+        }
+
+        if (!m) {
+            document.getElementById('supplementModalBody').innerHTML = `
+                <div style="padding: 1.5rem; background: #fee2e2; color: #ef4444; border-radius: 8px; font-weight: 600;">
+                    Error loading supplement request details: Request not found on server or locally.
+                </div>
+            `;
+            return;
+        }
+
+        let itemsHtml = '';
+        if (items.length === 0) {
+            itemsHtml = '<tr><td colspan="8" style="text-align:center; padding: 1.5rem; color:#6b7280;">No materials listed</td></tr>';
+        } else {
+            items.forEach((item, idx) => {
+                itemsHtml += `
+                    <tr>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb;">${idx + 1}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; font-family: monospace;">${item['Material Code'] || 'N/A'}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb;">${item['Material Name'] || 'N/A'}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: center;">${item['Unit'] || 'N/A'}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">${item['Supplement Qty'] || 0}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: 600;">${item['HOD'] || 'Pending'}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: 600;">${item['Related HOD'] || 'Pending'}</td>
+                        <td style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: 600;">${item['BOD'] || 'Pending'}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        document.getElementById('supplementModalBody').innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; background: #f3f4f6; padding: 1rem; border-radius: 8px; font-size: 0.875rem;">
+                <div><strong>Request Code:</strong> ${m.requestCode || requestCode}</div>
+                <div><strong>Status:</strong> <span style="font-weight:700; color: #1b4d3e;">${m.status || 'Pending'}</span></div>
+                <div><strong>Request Dept:</strong> ${m.requestDept || 'N/A'}</div>
+                <div><strong>Related Dept:</strong> ${m.relatedDept || 'N/A'}</div>
+                <div><strong>Create By:</strong> ${m.createBy || 'N/A'}</div>
+                <div><strong>Create Date:</strong> ${m.createDate || 'N/A'}</div>
+                <div style="grid-column: 1 / -1;"><strong>Reason:</strong> ${m.reasonToRequest || 'N/A'}</div>
+            </div>
+            <div style="font-weight: bold; margin-bottom: 0.5rem; font-family: 'Oswald', sans-serif;">Materials Required:</div>
+            <div style="overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 8px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+                    <thead>
+                        <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                            <th style="padding: 0.75rem 1rem;">No.</th>
+                            <th style="padding: 0.75rem 1rem;">Material Code</th>
+                            <th style="padding: 0.75rem 1rem;">Material Name</th>
+                            <th style="padding: 0.75rem 1rem; text-align: center;">Unit</th>
+                            <th style="padding: 0.75rem 1rem; text-align: right;">Qty</th>
+                            <th style="padding: 0.75rem 1rem; text-align: center;">HOD</th>
+                            <th style="padding: 0.75rem 1rem; text-align: center;">Rel HOD</th>
+                            <th style="padding: 0.75rem 1rem; text-align: center;">BOD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+            </div>
+        `;
     }
 
     window.closeSupplementForm = closeSupplementForm;
