@@ -2,22 +2,6 @@
 
 ## ✅ Pre-Deployment Verification
 
-### Database Models Enhanced
-- [x] InspectionDB updated with 7 new fields
-  - `inspection_stage` - Finishing, Sanding, Final, Assembly, Item White, Machinery, Upholstery
-  - `wo_number` - Work Order number
-  - `component_code` - Component identification
-  - `carcass_code` - Carcass identification
-  - `qty_inspected` - Quantity inspected
-  - `qty_passed` - Quantity passed
-  - `qty_failed` - Quantity failed
-
-- [x] DefectListDB updated with 5 new fields
-  - `defect_code` - Standardized defect code
-  - `defect_category` - Minor or Major
-  - `inspection_method` - Appearance, Measurement, Template/Drawing
-  - `material_standard` - Material reference
-  - `remark` - Additional notes
 
 ### Backend APIs Ready
 - [x] `GET /api/qc-manager/dashboard` endpoint
@@ -28,18 +12,6 @@
   - Returns: `monthly_trends` (dictionary with monthly data)
   - Returns: `top_defects` (list of top 10 defect codes)
 
-### Frontend Charts
-- [x] Chart.js 3.9.1 library integrated
-- [x] `renderFailRateChart()` function - Bar chart of fail rates by stage
-- [x] `renderTopDefectsChart()` function - Doughnut chart of top defects
-- [x] `renderMonthlyTrendChart()` function - Line chart of monthly trends
-
-### Data Synchronization
-- [x] QC Worker → QC Manager (inspections visible)
-- [x] QC Worker → Production Manager (defects visible)
-- [x] QC Worker → Production Worker (repairs tracked)
-- [x] QC Worker → Higher Department (approvals tracked)
-- [x] All users query same SQLite database
 
 ### Sample Data
 - [x] `init_sample_data.py` ready to load 72,997 records
